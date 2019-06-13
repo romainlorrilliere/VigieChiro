@@ -89,31 +89,45 @@ my_read_delim <- function(file="data/DataRP_SpTron_90.csv",sep=c("\t",";",","),d
 
 
 
-prepa_data <- function(d=NULL,dsite=NULL,dpart=NULL,id=NULL,output=TRUE) {
+prepa_data <- function(d=NULL,dsite=NULL,dpart=NULL,dSR=NULL,id=NULL,output=TRUE,seuilProbPip=.75) {
     library(dplyr)
     library(readr)
     library(lubridate)
+    library(ggplot2)
 
-   d <- NULL ;    dsite <- NULL;  dpart <- NULL; id <- NULL
+   d <- NULL ;    dsite <- NULL;  dpart <- NULL;dSR=NULL; id <- NULL;seuilProbPip=c(.75,.8)
 
     if(is.null(id))
         id <- Sys.Date()
 
     if(is.null(d))
         d <- my_read_delim("data/DataRP_SpTron_90.csv")
+   if("num_micro" %in% colnames(d)) colnames(d)[colnames(d)=="num_micro"] <- "micro_droit"
 
     if(is.null(dpart))
         dpart <-my_read_delim("data/p_export.csv",sep=";")
 
     if(is.null(dsite))
         dsite <- my_read_delim("data/sites_localites.txt")
-    dsite <- dsite[,c("id_site","longitude","latitude")]
-    colnames(dsite)[1] <- "idsite"
+   if("id_site" %in% colnames(dsite)) colnames(dsite)[colnames(dsite)=="id_site"] <- "idsite"
+
+    dsite <- dsite[,c("idsite","longitude","latitude")]
     dsite <- aggregate(.~idsite,data=dsite,mean)
+
+
+   if(is.null(dSR))
+        dSR <- my_read_delim("data/SRmed.csv")
+   if("MicroDroit" %in% colnames(dSR)) colnames(dSR)[colnames(dSR)=="MicroDroit"] <- "micro_droit"
+
+
+    if(length(seuilProbPip) == 1) seuilProbPip <- data.frame(seuil= rep(seuilProbPip,2),expansion_direct = c("direct","exp")) else seuilProbPip <- data.frame(seuilProbPip = seuilProbPip,expansion_direct = c("direct","exp"))
+
 
     dim(d)
     d <- inner_join(d,dpart)
     d <- inner_join(d,dsite)
+    d <- inner_join(d,dSR)
+    dim(d)
 ## num_micro = micro_right
 
 ## ajouter colonne de verification
@@ -128,18 +142,20 @@ prepa_data <- function(d=NULL,dsite=NULL,dpart=NULL,id=NULL,output=TRUE) {
     d$julian <- yday(d$date_format)
 
     cat("Ajout de la colonne expansion_direct (exp, direct, NA)\n")
-    d$expansion <- ifelse(d$num_micro,d$canal_expansion_temps == "DROITE" & d$canal_enregistrement_direct != "DROITE" ,d$canal_expansion_temps == "GAUCHE" & d$canal_enregistrement_direct != "GAUCHE")
-    d$direct <- ifelse(d$num_micro,d$canal_enregistrement_direct == "DROITE" & d$canal_expansion_temps != "DROITE",d$canal_enregistrement_direct == "GAUCHE" & d$canal_expansion_temps != "GAUCHE")
+    d$expansion <- ifelse(d$micro_droit,d$canal_expansion_temps == "DROITE" & d$canal_enregistrement_direct != "DROITE" ,d$canal_expansion_temps == "GAUCHE" & d$canal_enregistrement_direct != "GAUCHE")
+    d$direct <- ifelse(d$micro_droit,d$canal_enregistrement_direct == "DROITE" & d$canal_expansion_temps != "DROITE",d$canal_enregistrement_direct == "GAUCHE" & d$canal_expansion_temps != "GAUCHE")
     d$expansion_direct <- ifelse(d$expansion,"exp",ifelse(d$direct,"direct",NA))
 
+    cat("Ajout qq flag de validité\n")
+    gg <- ggplot(data=subset(d,!is.na(expansion_direct)),aes(IndiceProbPip)) + geom_histogram() + facet_wrap(.~expansion_direct)
+    gg <- gg + geom_vline(data=seuilProbPip,aes(xintercept=seuil),colour="red")
+    ggfile <- paste("output/indicePropPip_",id,".png",sep="")
+    cat("  -> [PNG]",ggfile)
+    ggsave(ggfile,gg)
 
+    d <- full_join(d,seuilProbPip)
+    d$PropPip_good <-d$IndiceProbPip>d$seuilProbPip
 
-    cat("Ajout flag "
-
-
-
-
-    d <- subset(d,IndiceProbPip>.8)  # seuil diff entre expension et direct
 
 
 
@@ -213,7 +229,7 @@ gg <- ggplot(data=d,aes(temps_enr)) + facet_wrap(espece~.,scales="free") + geom_
 
 gg <- ggplot(data=d,aes(nb_contacts)) + facet_wrap(espece~.,scales="free") + geom_histogram()
     ggsave("output/nb_contacts_sp.png",gg)
-gg
+
 
     d_seq_tps <- aggregate(temps_enr ~participation + espece,data=d, sum)
 
