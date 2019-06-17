@@ -172,7 +172,39 @@ add_absc <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,dall=NULL,as.tibbl
 
 
 
-
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title
+##' @param id
+##' @param d
+##' @param dpart
+##' @param dsite
+##' @param dSR
+##' @param output
+##' @param col_sample
+##' @param col_sp
+##' @param col_date
+##' @param col_site
+##' @param col_IndiceDurPip
+##' @param col_IndiceProbPip
+##' @param col_SampleRate
+##' @param col_tron
+##' @param col_nbcontact
+##' @param col_temps
+##' @param seuilProbPip
+##' @param seuilDurPipDirect
+##' @param seuilSR
+##' @param col_sp
+##' @param seuilSR_inf
+##' @param seuilSR_sup
+##' @param list_sample_cat
+##' @param aggregate_site
+##' @param add_absence
+##' @param list_sp
+##' @param first_columns
+##' @return
+##' @author Romain Lorrilliere
 prepa_data <- function(id=NULL,
                        d="data/DataRP_SpTron_90.csv",dpart="data/p_export.csv",dsite ="data/sites_localites.txt",dSR="data/SRmed.csv",
                        output=TRUE,
@@ -197,14 +229,14 @@ prepa_data <- function(id=NULL,
         d <- my_read_delim(d,print_head=FALSE)
     if("num_micro" %in% colnames(d)) colnames(d)[colnames(d)=="num_micro"] <- "micro_droit"
 
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
     if(!is.null(dpart)) {
         if(class(dpart)=="character")
             dpart <-my_read_delim(dpart,print_head=FALSE)
         d <- inner_join(d,dpart)
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table: \n")
         print(dim(d))
     }
 
@@ -219,6 +251,7 @@ prepa_data <- function(id=NULL,
 
 
     cat("\nAjout des colonnes de date: date_format_full, date_format, year, month, julian\n")
+            cat("-----------------------------------------\n\n")
 
     if(!(col_date %in% colnames(d))) {
         cat("\n  - La colonne enregistrée pour les dates n'est pas présentes dans les colonnes des données:\n",colnames(d),"\n")
@@ -244,7 +277,7 @@ prepa_data <- function(id=NULL,
         dsite <- aggregate(.~idsite,data=dsite,mean)
 
         d <- inner_join(d,dsite)
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table: \n")
         print(dim(d))
     }
 
@@ -254,7 +287,7 @@ prepa_data <- function(id=NULL,
     if("MicroDroit" %in% colnames(dSR)) colnames(dSR)[colnames(dSR)=="MicroDroit"] <- "micro_droit"
 
         d <- inner_join(d,dSR)
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table: \n")
         print(dim(d))
 
     }
@@ -267,7 +300,7 @@ prepa_data <- function(id=NULL,
         cat("\nSelection des sps parmi\n")
         cat("  ",list_sp,"\n")
         d <- d[d[[col_sp]] %in% list_sp,]
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table: \n")
         print(dim(d))
     }
 
@@ -275,16 +308,18 @@ prepa_data <- function(id=NULL,
         cat("\nSelection des type de suivi\n")
         cat("  ",list_sample_cat,"\n")
         d <- d[d[["sample_cat"]] %in% list_sample_cat,]
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table: \n")
         print(dim(d))
     }
 
     cat("\nAjout de la colonne expansion_direct (exp, direct, NA)\n")
+            cat("-----------------------------------------\n\n")
     d$expansion <- ifelse(d$micro_droit,d$canal_expansion_temps == "DROITE" & d$canal_enregistrement_direct != "DROITE" ,d$canal_expansion_temps == "GAUCHE" & d$canal_enregistrement_direct != "GAUCHE")
     d$direct <- ifelse(d$micro_droit,d$canal_enregistrement_direct == "DROITE" & d$canal_expansion_temps != "DROITE",d$canal_enregistrement_direct == "GAUCHE" & d$canal_expansion_temps != "GAUCHE")
     d$expansion_direct <- ifelse(d$expansion,"exp",ifelse(d$direct,"direct",NA))
 
     cat("\nAjout qq flag de validité\n")
+            cat("-----------------------------------------\n\n")
 
     cat("\n   - IndiceProbPip\n")
     print(seuilProbPip)
@@ -298,7 +333,7 @@ prepa_data <- function(id=NULL,
 
     d <- full_join(d,seuilProbPip)
     d$PropPip_good <- (pull(d,col_IndiceProbPip) >= pull(d,"seuilProbPip"))
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
 
@@ -315,7 +350,7 @@ prepa_data <- function(id=NULL,
     d <- full_join(d,seuilDurPip)
     d$DurPip_good <- (pull(d,col_IndiceDurPip) >= pull(d,"seuilDurPip"))
 
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
 
@@ -326,7 +361,7 @@ prepa_data <- function(id=NULL,
     seuilSR_sp <- subset(seuilSR,!is.na(col_sp))
     colnames(seuilSR_sp)[3:4] <- paste(colnames(seuilSR_sp)[3:4],"sp",sep="_")
 
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
     d <- full_join(d,seuilSR_sp)
@@ -338,7 +373,7 @@ prepa_data <- function(id=NULL,
     d <- d[,!(colnames(d) %in% c("seuilSR_inf_sp","seuilSR_sup_sp"))]
     d$SampleRate_good <- pull(d,col_SampleRate) >= d$seuilSR_inf & pull(d,col_SampleRate) <= d$seuilSR_sup
 
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
 
@@ -351,7 +386,7 @@ prepa_data <- function(id=NULL,
     if(aggregate_site) {
 
         cat("\nAggregation des données aux sites\n")
-
+        cat("-----------------------------------------\n\n")
         if(!(col_tron %in% colnames(d))) {
             cat("\n  - La colonne enregistrée pour les tronçons et ou les points n'est pas présentes dans les colonnes des données:\n",colnames(d),"\n")
             col_tron <- readline("Saisir le nom de la colonne des tronçons/points:")
@@ -377,16 +412,27 @@ prepa_data <- function(id=NULL,
 
         }
 
+        cat("Exclusion des data pour lesquelles la catégorie expansion_direct n'a pas pu être affectée\n")
 
-
+        d <- subset(d,!(is.na(expansion_direct)))
+        cat("\n ##Dimension de la table: \n")
+        print(dim(d))
 
         dd <- d[,c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,"strict_selection","flexible_selection")]
-###################################
-        colpart <- setdiff(colnames(d),c(colnames(dd),col_IndiceDurPip,col_IndiceProbPip,col_SampleRate,"seuilProbPip","PropPip_good","seuilDurPip","DurPip_good"))
+
+
+        colpart <- c(col_sample,"expansion_direct",col_sp,setdiff(colnames(d),c(colnames(dd),col_IndiceDurPip,col_IndiceProbPip,col_SampleRate,"seuilProbPip","PropPip_good","seuilDurPip","DurPip_good","expansion","direct","sampleRate_good")))
         ddpart <-  unique(d[,colpart])
 
+        ddpart_sp_ed <- unique(d[,c(col_sample,"expansion_direct",col_sp)])
 
-        cat("  - Data avec filtre strict\n")
+        if(nrow(ddpart_sp_ed) != nrow(ddpart))
+        ddpart_sp_ed <- data.frame(id=1:nrow(ddpart_sp_ed),ddpart_sp_ed,stringsAsFactors=FALSE)
+
+
+
+
+        cat("\n  - Data avec filtre strict\n")
         form <- as.formula(paste(col_nbcontact," ~  ",col_sample," + ",col_sp," + expansion_direct"))
         dd_strict_contact <- aggregate(form,subset(d,strict_selection),sum)
 
@@ -399,14 +445,14 @@ prepa_data <- function(id=NULL,
 
         dd_strict <- inner_join(dd_strict_contact,dd_strict_temps)
 
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table (selection strict): \n")
         print(dim(dd_strict))
 
 
 
         if(add_absence) {
             dd_strict <- add_absc(dd_strict,c(col_sample,"expansion_direct",col_sp))
-            cat("\nDimension de la table: \n")
+            cat("\n ##Dimension de la table (selection strict): \n")
             print(dim(dd_strict))
 
         }
@@ -414,12 +460,10 @@ prepa_data <- function(id=NULL,
 
         colnames(dd_strict)[4:6] <- paste(colnames(dd_strict)[4:6],"strict",sep="_")
 
-        cat("\nDimension de la table: \n")
-        print(dim(dd_strict))
 
 
 
-        cat("  - Data avec filtre fléxible\n")
+        cat("\n  - Data avec filtre fléxible\n")
         form <- as.formula(paste(col_nbcontact," ~ ",col_sample," + ",col_sp," + expansion_direct"))
         dd_flexible_contact <- aggregate(form ,subset(d,flexible_selection),sum)
 
@@ -432,35 +476,28 @@ prepa_data <- function(id=NULL,
 
         dd_flexible <- inner_join(dd_flexible_contact,dd_flexible_temps)
 
-        cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table (selection flexible): \n")
         print(dim(dd_flexible))
 
         if(add_absence) {
             dd_flexible <- add_absc(dd_flexible,c(col_sample,"expansion_direct",col_sp))
-            cat("\nDimension de la table: \n")
+        cat("\n ##Dimension de la table (selection flexible): \n")
             print(dim(dd_flexible))
         }
 
         dd_flexible <- inner_join(dd_flexible,dd_flexible_nbtron)
         colnames(dd_flexible)[4:6] <- paste(colnames(dd_flexible)[4:6],"flexible",sep="_")
-        print(head(dd_flexible))
 
-        print(head(dd_strict))
-
-        cat("\nDimension de la table: \n")
-        print(dim(dd_flexible))
 
 
         dd <- full_join(dd_strict,dd_flexible)
-        cat("\nDimension de la table: \n")
-        print(dim(dd))
-
         dd <-full_join(dd,ddpart)
 
-        cat("\nDimension de la table: \n")
-        print(dim(dd))
 
         d <- dd
+
+        cat("\n ##Dimension de la table: \n")
+        print(dim(d))
 
         col_tron_agg <- paste("nb_",col_tron,sep="")
 
@@ -502,6 +539,7 @@ prepa_data <- function(id=NULL,
 
 
     cat("\nChangement de l'ordre des colonnes\n")
+    cat("-----------------------------------------\n\n")
     cat(first_columns,"...\n")
 
     first_columns_absc <- setdiff(first_columns,colnames(d))
@@ -518,13 +556,14 @@ prepa_data <- function(id=NULL,
     write_csv(d,filecsv)
     cat("   DONE !\n")
 
-    cat("\nDimension de la table: \n")
+    cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
 
     if(output) return(d)
 
 }
+
 
 
 
@@ -579,10 +618,10 @@ summary_vigie_chiro <- function(d) {
 
     hist(d$month)
 
-gg <- ggplot(data=d,aes(temps_enr)) + facet_wrap(col_sp~.,scales="free") + geom_histogram()
+    gg <- ggplot(data=d,aes(temps_enr)) + facet_wrap(col_sp~.,scales="free") + geom_histogram()
     ggsave("output/temps_enr_sp.png",gg)
 
-gg <- ggplot(data=d,aes(nb_contacts)) + facet_wrap(col_sp~.,scales="free") + geom_histogram()
+    gg <- ggplot(data=d,aes(nb_contacts)) + facet_wrap(col_sp~.,scales="free") + geom_histogram()
     ggsave("output/nb_contacts_sp.png",gg)
 
 
