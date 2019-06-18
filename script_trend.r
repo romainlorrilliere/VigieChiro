@@ -112,20 +112,30 @@ my_read_delim <- function(file,sep=c("\t",";",","),dec=c(".",","),as.tibble=TRUE
 ##' .. content for \description{} (no empty lines) ..
 ##'
 ##' .. content for \details{} ..
-##' @title Add abscence in data set of observation
+##' @title Add absence in data set of observation
 ##' @param d data,
 ##' @param col_gr character vector of the column names that will be uses to construct the sample unit example : date, site. The species column could be add in this vector, default NULL
 ##' @param col_sp name of the species name column default NULL
-##' @param col_value vectors of colmuns that will be update with abscence, defaut NULL, if null all columns not present in col_gr and col_sp will be update with abscence
+##' @param col_value vectors of colmuns that will be update with absence, defaut NULL, if null all columns not present in col_gr and col_sp will be update with absence
 ##' @param dall if there are not all sample in d you can import a table with all sample with the column of col_gr, default NULL
 ##' @param as.tibble  logical to get a tibble format, default TRUE
 ##' @return update of d (data.frame or tibble) with 0 in the col_value(s) when species are absente
 ##' @author
-add_absc <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,dall=NULL,as.tibble=TRUE) {
+add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,dall=NULL,as.tibble=TRUE) {
     ##     col_value = c("nb_contacts","temps_enr"); col_sp = "col_sp"; col_gr = c("col_sample","expansion_direct")
+
 
     cat("\nAjout des absences\n")
     if(class(d)=="data.frame") d <- as_tibble(d)
+
+    if(!is.null(col_info_gr)){
+        dgr <- unique(d %>% select(one_of(c(col_gr,col_info_gr))))
+        dgr_seul <- unique(d %>% select(one_of(col_gr)))
+        if(nrow(dgr) != nrow(dgr_seul)) {
+            stop("ERROR ! l'association des colonnes:\n",colnames(dgr),"\nn'est pas unique\n")
+        }
+        d <- d %>% select( -one_of(col_info_gr))
+    }
 
     if(is.null(dall)) {
         l_gr <- list()
@@ -146,12 +156,18 @@ add_absc <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,dall=NULL,as.tibbl
             d[is.na(d[,j]),j] <- 0
     }
 
+
+    if(!is.null(col_info_gr))
+        d <- full_join(d,dgr)
+
+
+
     if(as.tibble) {
         library(dplyr)
         dd <- try(as_tibble(d))
         if(class(dd)[1]=="try-error") {
             cat("The conversion to table format did not work.... \n Output at dataframe format!! \n")
-           d <- dd
+            d <- dd
             d <- d[order(d),]
         }else {
              d <- d %>% arrange()
@@ -161,7 +177,7 @@ add_absc <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,dall=NULL,as.tibbl
             d <- dd
             d <- d[order(d),]
 
-        }
+    }
 
 
 
@@ -205,22 +221,23 @@ add_absc <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,dall=NULL,as.tibbl
 ##' @param first_columns
 ##' @return
 ##' @author Romain Lorrilliere
-prepa_data <- function(id=NULL,
+prepa_data <- function(id="DataRP_SpTron_90",
                        d="data/DataRP_SpTron_90.csv",dpart="data/p_export.csv",dsite ="data/sites_localites.txt",dSR="data/SRmed.csv",
                        output=TRUE,
                        col_sample="participation",col_sp="espece",col_date="date_debut",col_site="site",col_IndiceDurPip="IndiceDurPip",col_IndiceProbPip="IndiceProbPip",col_SampleRate="SampleRate",col_tron="Tron",col_nbcontact="nb_contacts",col_temps="temps_enr",
-                       seuilProbPip=c(.75,.8),seuilDurPipDirect=1.5,
+                       seuilProbPip=c(.9,.85),seuilDurPipDirect=1.5,
                        seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000)),
                        list_sample_cat=c("pedestre","routier"),
                        aggregate_site=TRUE,add_absence=TRUE,
                        list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip"),
-                       first_columns=c("participation","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","col_sp","nb_contacts","temps_enr","longitude","latitude")) {
+                       first_columns=c("participation","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude"),
+                       only_first_columns=FALSE,excluded_columns="commentaire") {
     library(dplyr)
     library(readr)
     library(lubridate)
     library(ggplot2)
 
-#    d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilDurPipDirect=1.5;    seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_abscence=TRUE;first_columns=c("col_sample","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","col_sp","nb_contacts","temps_enr","longitude","latitude");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_col_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip")
+#    d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilDurPipDirect=1.5;    seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;first_columns=c("col_sample","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","col_sp","nb_contacts","temps_enr","longitude","latitude");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_col_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip")
 
     if(is.null(id))
         id <- Sys.Date()
@@ -261,7 +278,7 @@ prepa_data <- function(id=NULL,
 
     }
 
-    d$date_format_full<- as.POSIXlt(pull(d,col_date),zone = "CET",format="%d/%m/%Y %H:%M")
+    d$date_format_full<- as.POSIXct(pull(d,col_date),zone = "CET",format="%d/%m/%Y %H:%M")
     d$date_format <- format(d$date_format_full,format="%Y-%m-%d")
 
     d$year <- year(d$date_format)
@@ -281,6 +298,7 @@ prepa_data <- function(id=NULL,
         print(dim(d))
     }
 
+
     if(!is.null(dSR)){
         if(class(dSR)=="character")
             dSR <- my_read_delim(dSR,print_head=FALSE)
@@ -296,6 +314,14 @@ prepa_data <- function(id=NULL,
 
     seuilDurPip <- tibble(seuilDurPip=c(seuilDurPipDirect,0),expansion_direct = c("direct","exp"))
 
+
+
+    if(!(is.null(excluded_columns)) & length(intersect(colnames(d),excluded_columns))>0) {
+        cat("\nExclusion des colonnes\n")
+        cat("  ",excluded_columns,"\n")
+         d <- d %>% select(-one_of(excluded_columns))
+        }
+
     if(!is.null(list_sp)) {
         cat("\nSelection des sps parmi\n")
         cat("  ",list_sp,"\n")
@@ -304,6 +330,7 @@ prepa_data <- function(id=NULL,
         print(dim(d))
     }
 
+
     if(!is.null(list_sample_cat)) {
         cat("\nSelection des type de suivi\n")
         cat("  ",list_sample_cat,"\n")
@@ -311,6 +338,7 @@ prepa_data <- function(id=NULL,
         cat("\n ##Dimension de la table: \n")
         print(dim(d))
     }
+
 
     cat("\nAjout de la colonne expansion_direct (exp, direct, NA)\n")
             cat("-----------------------------------------\n\n")
@@ -337,6 +365,7 @@ prepa_data <- function(id=NULL,
     print(dim(d))
 
 
+
     cat("\n   - IndiceDurPip\n")
     print(seuilDurPip)
 
@@ -358,16 +387,19 @@ prepa_data <- function(id=NULL,
    print(seuilSR)
    seuilSR_gen <- subset(seuilSR,is.na(col_sp),select=c("expansion_direct","seuilSR_inf","seuilSR_sup"))
     d <- full_join(d,seuilSR_gen)
+
     seuilSR_sp <- subset(seuilSR,!is.na(col_sp))
     colnames(seuilSR_sp)[3:4] <- paste(colnames(seuilSR_sp)[3:4],"sp",sep="_")
-
+    colnames(seuilSR_sp)[colnames(seuilSR_sp)=="col_sp"] <- col_sp
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
+
 
     d <- full_join(d,seuilSR_sp)
 
     d$seuilSR_inf <- ifelse(is.na(d$seuilSR_inf_sp),d$seuilSR_inf,d$seuilSR_inf_sp)
     d$seuilSR_sup <- ifelse(is.na(d$seuilSR_sup_sp),d$seuilSR_sup,d$seuilSR_sup_sp)
+
 
 
     d <- d[,!(colnames(d) %in% c("seuilSR_inf_sp","seuilSR_sup_sp"))]
@@ -382,6 +414,13 @@ prepa_data <- function(id=NULL,
 
     cat("\n   - flexible_selection <- SampleRate_good \n")
     d$flexible_selection <- d$SampleRate_good
+
+    cat("Exclusion des data pour lesquelles la catégorie expansion_direct n'a pas pu être affectée\n")
+
+
+    d <- subset(d,!(is.na(expansion_direct)))
+    cat("\n ##Dimension de la table: \n")
+    print(dim(d))
 
     if(aggregate_site) {
 
@@ -404,6 +443,7 @@ prepa_data <- function(id=NULL,
         }
 
 
+
           if(!(col_temps %in% colnames(d))) {
               cat("\n  - La colonne enregistrée pour les durées des séquences n'est pas présentes dans les colonnes des données:\n",colnames(d),"\n")
             col_temps <- readline("Saisir le nom de la colonne des durées des séquences:")
@@ -412,22 +452,19 @@ prepa_data <- function(id=NULL,
 
         }
 
-        cat("Exclusion des data pour lesquelles la catégorie expansion_direct n'a pas pu être affectée\n")
-
-        d <- subset(d,!(is.na(expansion_direct)))
-        cat("\n ##Dimension de la table: \n")
-        print(dim(d))
 
         dd <- d[,c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,"strict_selection","flexible_selection")]
 
-
         colpart <- c(col_sample,"expansion_direct",col_sp,setdiff(colnames(d),c(colnames(dd),col_IndiceDurPip,col_IndiceProbPip,col_SampleRate,"seuilProbPip","PropPip_good","seuilDurPip","DurPip_good","expansion","direct","sampleRate_good")))
+
         ddpart <-  unique(d[,colpart])
 
         ddpart_sp_ed <- unique(d[,c(col_sample,"expansion_direct",col_sp)])
 
-        if(nrow(ddpart_sp_ed) != nrow(ddpart))
-        ddpart_sp_ed <- data.frame(id=1:nrow(ddpart_sp_ed),ddpart_sp_ed,stringsAsFactors=FALSE)
+        if(nrow(ddpart_sp_ed) != nrow(ddpart)) {
+            stop("ERROR ! l'association des colonnes:\n",colnames(ddpart_sp_ed),"\nn'est pas unique\n")
+
+        }
 
 
 
@@ -448,10 +485,8 @@ prepa_data <- function(id=NULL,
         cat("\n ##Dimension de la table (selection strict): \n")
         print(dim(dd_strict))
 
-
-
         if(add_absence) {
-            dd_strict <- add_absc(dd_strict,c(col_sample,"expansion_direct",col_sp))
+            dd_strict <- add_abs(dd_strict,c(col_sample,"expansion_direct",col_sp))
             cat("\n ##Dimension de la table (selection strict): \n")
             print(dim(dd_strict))
 
@@ -459,9 +494,6 @@ prepa_data <- function(id=NULL,
         dd_strict <- inner_join(dd_strict,dd_strict_nbtron)
 
         colnames(dd_strict)[4:6] <- paste(colnames(dd_strict)[4:6],"strict",sep="_")
-
-
-
 
         cat("\n  - Data avec filtre fléxible\n")
         form <- as.formula(paste(col_nbcontact," ~ ",col_sample," + ",col_sp," + expansion_direct"))
@@ -480,7 +512,7 @@ prepa_data <- function(id=NULL,
         print(dim(dd_flexible))
 
         if(add_absence) {
-            dd_flexible <- add_absc(dd_flexible,c(col_sample,"expansion_direct",col_sp))
+            dd_flexible <- add_abs(dd_flexible,c(col_sample,"expansion_direct",col_sp))
         cat("\n ##Dimension de la table (selection flexible): \n")
             print(dim(dd_flexible))
         }
@@ -488,11 +520,8 @@ prepa_data <- function(id=NULL,
         dd_flexible <- inner_join(dd_flexible,dd_flexible_nbtron)
         colnames(dd_flexible)[4:6] <- paste(colnames(dd_flexible)[4:6],"flexible",sep="_")
 
-
-
         dd <- full_join(dd_strict,dd_flexible)
         dd <-full_join(dd,ddpart)
-
 
         d <- dd
 
@@ -517,43 +546,39 @@ prepa_data <- function(id=NULL,
             first_columns_aggregate <- c(first_columns_aggregate ,first_columns[(i_first_columns[2]+1):(i_first_columns[3]-1)])
         first_columns_aggregate <- c(first_columns_aggregate, paste(names(i_first_columns[3]),c("strict","flexible"),sep="_"), first_columns[(i_first_columns[3]+1):length(first_columns)])
 
-
         first_columns <- first_columns_aggregate
-
-
-
-
-
     }else{
-
         if(add_absence) {
-            cat("\nAjout des absences\n")
+
+
+
+            colpart <- setdiff(colnames(d),c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,col_IndiceDurPip,col_IndiceProbPip,"PropPip_good","DurPip_good","sampleRate_good", "seuilSR_inf","seuilSR_sup","SampleRate_good"))
+
+            d <- add_abs(d,col_gr=c(col_sample,"expansion_direct",col_tron),col_sp=col_sp,col_value=c(col_nbcontact,col_temps),col_info_gr=colpart)
+            cat("\n ##Dimension de la table: \n")
+            print(dim(d))
 
         }
-
     }
-
-
-
-
-
 
     cat("\nChangement de l'ordre des colonnes\n")
     cat("-----------------------------------------\n\n")
     cat(first_columns,"...\n")
 
-    first_columns_absc <- setdiff(first_columns,colnames(d))
+    first_columns_abs <- setdiff(first_columns,colnames(d))
 
-    if(length(first_columns_absc)>0){
-        cat("\n",length(first_columns_absc),"colonne(s) non présente(s) dans les données:\n  ", first_columns_absc,"\n")
-        first_columns <- setdiff(first_columns,first_columns_absc)
+    if(length(first_columns_abs)>0){
+        cat("\n",length(first_columns_abs),"colonne(s) non présente(s) dans les données:\n  ", first_columns_abs,"\n")
+        first_columns <- setdiff(first_columns,first_columns_abs)
     }
-    colOrder <- c(first_columns,setdiff(colnames(d),first_columns))
-    d <- d[,colOrder]
+    if(only_first_columns) colOrder <- first_columns else colOrder <- c(first_columns,setdiff(colnames(d),first_columns))
 
-    filecsv <- paste("data/data_vigieChiro_",id,".csv",sep="")
+    d <- d %>% select(colOrder)
+    d <- arrange(d)
+
+    filecsv <- paste("data/data_vigieChiro_",id,"_",ifelse(aggregate_site,"site","TronPoint"),"_",ifelse(is.null(list_sp),"allSp",ifelse(length(list_sp)<6,paste(list_sp,collapse="-"),paste(length(list_sp),"sp",sep=""))),"_",ifelse(add_absence,"withAbs","presence="),".csv",sep="")
     cat("\n   --> [CSV]",filecsv)
-    write_csv(d,filecsv)
+    write.table(d,filecsv,sep="\t",dec=".",row.names=FALSE)
     cat("   DONE !\n")
 
     cat("\n ##Dimension de la table: \n")
@@ -563,6 +588,17 @@ prepa_data <- function(id=NULL,
     if(output) return(d)
 
 }
+
+
+
+
+summary_sample <- function(d) {
+
+
+
+
+}
+
 
 
 
