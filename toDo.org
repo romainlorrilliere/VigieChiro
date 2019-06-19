@@ -1,0 +1,28 @@
+* DONE [#A] Preparation data [3/3]                            :data:function:
+** DONE [#A] my_read_delim()                                       :fonction:
+** DONE [#A] add_abs() [2/2]                                       :fonction:
+- [X] fonction simple
+- [X] fonction générique
+** DONE [#A] Prepa_data()[9/9]                                     :fonction:
+- [X] import des tables
+- [X] ajout date
+- [X] ajout colonne direct_expansion
+- [X] ajout colonne type suivi
+- [X] flags [3/3]
+  - [X] seuilProb
+  - [X] seuilDur
+  - [X] seuilSR
+- [X] add_absence
+- [X] aggregate site [3/3]
+  - [X] add absence
+  - [X] sum nb_contact
+  - [X] update fisrt_columns
+- [X] check inner_join()
+- [X] rendre générique
+
+* TODO [#A] Trend especes [0/2]                                     :Analyse:
+** TODO qq verification[0/3]
+*** TODO Historique tronçon                                        :fonction:
+*** TODO occurance par espèce                                      :fonction:
+*** TODO weight sur modèle mixte                             :methodo:biblio:
+* TODO [#A] Trend groupes [/]                                       :Analyse:
