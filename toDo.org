@@ -21,8 +21,10 @@
 - [X] rendre générique
 
 * TODO [#A] Trend especes [0/2]                                     :Analyse:
-** TODO qq verification[0/3]
-*** TODO Historique tronçon                                        :fonction:
+** TODO qq verification[0/4]
+*** TODO historic_tron()                                           :fonction:
+des troncons sont ils moins suivie que d'autre au court des ans ? 
 *** TODO occurance par espèce                                      :fonction:
 *** TODO weight sur modèle mixte                             :methodo:biblio:
+** TODO [#A] trend_sp()                                            :fonction:
 * TODO [#A] Trend groupes [/]                                       :Analyse:
