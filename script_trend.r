@@ -126,7 +126,7 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
 
 
     cat("\nAjout des absences\n")
-    if(class(d)=="data.frame") d <- as_tibble(d)
+    if(class(d)[1]=="data.frame") d <- as_tibble(d)
 
     if(!is.null(col_info_gr)){
         dgr <- unique(d %>% select(one_of(c(col_gr,col_info_gr))))
@@ -163,6 +163,7 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
 
 
     if(as.tibble) {
+
         library(dplyr)
         dd <- try(as_tibble(d))
         if(class(dd)[1]=="try-error") {
@@ -209,7 +210,7 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
 ##' @param col_nbcontact
 ##' @param col_temps
 ##' @param seuilProbPip
-##' @param seuilDurPipDirect
+##' @param seuilInfDurPipDirect
 ##' @param seuilSR
 ##' @param col_sp
 ##' @param seuilSR_inf
@@ -225,24 +226,24 @@ prepa_data <- function(id="DataRP_SpTron_90",
                        d="data/DataRP_SpTron_90.csv",dpart="data/p_export.csv",dsite ="data/sites_localites.txt",dSR="data/SRmed.csv",
                        output=TRUE,
                        col_sample="participation",col_sp="espece",col_date="date_debut",col_site="site",col_IndiceDurPip="IndiceDurPip",col_IndiceProbPip="IndiceProbPip",col_SampleRate="SampleRate",col_tron="Tron",col_nbcontact="nb_contacts",col_temps="temps_enr",
-                       seuilProbPip=c(.9,.85),seuilDurPipDirect=1.5,
+                       seuilProbPip=c(.9,.85),seuilInfDurPipDirect=1.5,seuilSupDurPipExp=0.5,
                        seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000)),
                        list_sample_cat=c("pedestre","routier"),
                        aggregate_site=TRUE,add_absence=TRUE,
                        list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip"),
-                       first_columns=c("participation","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude"),
+                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt"),
                        only_first_columns=FALSE,excluded_columns="commentaire") {
     library(dplyr)
     library(readr)
     library(lubridate)
     library(ggplot2)
 
-#    d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilDurPipDirect=1.5;    seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;first_columns=c("col_sample","idobservateur","date_format","year","month","julian","sample_cat","idsite","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","col_sp","nb_contacts","temps_enr","longitude","latitude");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_col_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip")
+#    d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilInfDurPipDirect=1.5;  seuilSupDurPipExp=0.5;  seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_col_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip")
 
     if(is.null(id))
         id <- Sys.Date()
 
-    if(class(d)=="character")
+    if(class(d)[1]=="character")
         d <- my_read_delim(d,print_head=FALSE)
     if("num_micro" %in% colnames(d)) colnames(d)[colnames(d)=="num_micro"] <- "micro_droit"
 
@@ -250,7 +251,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
     print(dim(d))
 
     if(!is.null(dpart)) {
-        if(class(dpart)=="character")
+        if(class(dpart)[1]=="character")
             dpart <-my_read_delim(dpart,print_head=FALSE)
         d <- inner_join(d,dpart)
         cat("\n ##Dimension de la table: \n")
@@ -266,9 +267,18 @@ prepa_data <- function(id="DataRP_SpTron_90",
         d$sample_cat[grep("outier",pull(d,col_site))] <- "routier"
     }
 
+      if(!("num_site" %in% colnames(d))) {
+        cat("\nAjout de la colonne du numeros de site\n")
+        d$num_site <- as.numeric(ifelse(d$sample_cat == "routier",
+                                        gsub("Vigie-chiro - Routier-","",d$site),
+                                 ifelse(d$sample_cat=="pedestre",
+                                        gsub("Vigiechiro - Pédestre-","",d$site),NA)))
+        d$num_site_txt<- sprintf(paste("%0",max(nchar(d$num_site)),"d",sep=""), d$num_site)
+       }
+
 
     cat("\nAjout des colonnes de date: date_format_full, date_format, year, month, julian\n")
-            cat("-----------------------------------------\n\n")
+    cat("-----------------------------------------\n\n")
 
     if(!(col_date %in% colnames(d))) {
         cat("\n  - La colonne enregistrée pour les dates n'est pas présentes dans les colonnes des données:\n",colnames(d),"\n")
@@ -286,8 +296,59 @@ prepa_data <- function(id="DataRP_SpTron_90",
     d$julian <- yday(d$date_format)
 
 
+    cat("\nAjout de la colonne ordre_passage\n")
+    cat("-----------------------------------------\n\n")
+
+
+    library(data.table)
+
+    seuilPassage <- c(150,220,285)
+    seuilPassage <- tibble(julian=seuilPassage,date_year= format(as.POSIXct(paste(seuilPassage,2000),zone = "CET",format="%j %Y"),format="%d/%m"))
+
+    period <- tibble(passage=as.character(1:2),period=c(paste(seuilPassage$date_year[1]," -> ",seuilPassage$date_year[2],sep=""),paste(seuilPassage$date_year[2]," -> ",seuilPassage$date_year[3],sep="")))
+
+    dparti <- unique(select(d,c("idsite","date_format","julian","year")))
+    dparti <- dparti %>% arrange()
+    dparti$idsite_year <- paste(dparti$idsite,dparti$year,sep="_")
+    ddparti<- data.table(dparti)
+    ddparti <- ddparti[,ordre_passage:= 1:.N, by = idsite_year]
+    dparti <- as_tibble(ddparti)
+
+    dnb <- aggregate(ordre_passage ~ idsite_year, dparti,max)
+    colnames(dnb)[2] <- "nombre_de_passage"
+    dparti <- inner_join(dparti,dnb)
+
+
+    dparti$passage <- ifelse(dparti$julian>=seuilPassage$julian[1] & dparti$julian<seuilPassage$julian[2],1,ifelse(dparti$julian>=seuilPassage$julian[2] & dparti$julian<seuilPassage$julian[3],2,""))
+
+    dparti <- full_join(dparti,period)
+
+    dparti$ordre_passage_f <- as.factor(dparti$ordre_passage)
+    dparti$nombre_de_passage_f<- as.factor(dparti$nombre_de_passage)
+
+    gg <- ggplot(data=dparti,aes(x=julian,group=period,fill=period)) + facet_grid(ordre_passage~nombre_de_passage)
+    gg <- gg + geom_histogram(alpha=.8)
+    gg <- gg + geom_vline(data=seuilPassage,aes(xintercept=julian))
+    gg <- gg + labs(x="Jour julien",title="Date des passages,\nen fonction du nombre de passage (colonne) et du passage (ligne)",fill="Période",subtitle=id)
+   ggfile <- paste("output/date_passage_distribution_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg,width=13,height=11)
+
+
+    gg <- ggplot(data=dparti,aes(y=julian,x=ordre_passage,colour=nombre_de_passage_f))
+    gg <- gg + geom_jitter(alpha=0.5,width=0.1)
+    gg <- gg + geom_hline(data=seuilPassage,aes(yintercept=julian))
+    gg <- gg + geom_label(data=seuilPassage,aes(y=seuilPassage$julian,label=date_year,x=6),colour="black")
+    gg <- gg + labs(x="Les passages",title="Date des passages en fonction du passage",colour="Nombre de passages",subtitle=id)
+    ggfile <- paste("output/date_passage_plot",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg,width=8,height=7)
+
+    d <- inner_join(d,dparti)
+
+
     if(!is.null(dsite)){
-        if(class(dsite)=="character")
+        if(class(dsite)[1]=="character")
             dsite <- my_read_delim(dsite,print_head=FALSE)
         if("id_site" %in% colnames(dsite)) colnames(dsite)[colnames(dsite)=="id_site"] <- "idsite"
         dsite <- dsite[,c("idsite","longitude","latitude")]
@@ -300,7 +361,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
 
     if(!is.null(dSR)){
-        if(class(dSR)=="character")
+        if(class(dSR)[1]=="character")
             dSR <- my_read_delim(dSR,print_head=FALSE)
     if("MicroDroit" %in% colnames(dSR)) colnames(dSR)[colnames(dSR)=="MicroDroit"] <- "micro_droit"
 
@@ -310,11 +371,12 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
     }
 
-    if(length(seuilProbPip) == 1) seuilProbPip <- tibble(seuilProbPip= rep(seuilProbPip,2),expansion_direct = c("direct","exp")) else seuilProbPip <- tibble(seuilProbPip = seuilProbPip,expansion_direct = c("direct","exp"))
+    if(length(seuilProbPip) == 1) seuil_ProbPip <- tibble(seuil_ProbPip= rep(seuilProbPip,2),expansion_direct = c("direct","exp")) else seuil_ProbPip <- tibble(seuil_ProbPip = seuilProbPip,expansion_direct = c("direct","exp"))
 
-    seuilDurPip <- tibble(seuilDurPip=c(seuilDurPipDirect,0),expansion_direct = c("direct","exp"))
+    seuilInf_DurPip <- tibble(seuilInf_DurPip=c(seuilInfDurPipDirect,0),expansion_direct = c("direct","exp"))
+    seuilSup_DurPip <- tibble(seuilSup_DurPip=c(5,seuilSupDurPipExp),expansion_direct = c("direct","exp"))
 
-
+    seuil_DurPip <- inner_join(seuilInf_DurPip,seuilSup_DurPip)
 
     if(!(is.null(excluded_columns)) & length(intersect(colnames(d),excluded_columns))>0) {
         cat("\nExclusion des colonnes\n")
@@ -341,7 +403,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
 
     cat("\nAjout de la colonne expansion_direct (exp, direct, NA)\n")
-            cat("-----------------------------------------\n\n")
+    cat("-----------------------------------------\n\n")
     d$expansion <- ifelse(d$micro_droit,d$canal_expansion_temps == "DROITE" & d$canal_enregistrement_direct != "DROITE" ,d$canal_expansion_temps == "GAUCHE" & d$canal_enregistrement_direct != "GAUCHE")
     d$direct <- ifelse(d$micro_droit,d$canal_enregistrement_direct == "DROITE" & d$canal_expansion_temps != "DROITE",d$canal_enregistrement_direct == "GAUCHE" & d$canal_expansion_temps != "GAUCHE")
     d$expansion_direct <- ifelse(d$expansion,"exp",ifelse(d$direct,"direct",NA))
@@ -350,37 +412,132 @@ prepa_data <- function(id="DataRP_SpTron_90",
             cat("-----------------------------------------\n\n")
 
     cat("\n   - IndiceProbPip\n")
-    print(seuilProbPip)
-
+    print(seuil_ProbPip)
 
     gg <- ggplot(data=subset(d,!is.na(expansion_direct)),aes(IndiceProbPip)) + geom_histogram() + facet_grid(expansion_direct~.)
-    gg <- gg + geom_vline(data=seuilProbPip,aes(xintercept=seuilProbPip),colour="red",size=2,alpha = .8)
+    gg <- gg + geom_vline(data=seuil_ProbPip,aes(xintercept=seuil_ProbPip),colour="red",size=2,alpha = .8)
+    gg <- gg + labs(x="indicePropPip",title=paste("indicePropPip",id))
     ggfile <- paste("output/indicePropPip_",id,".png",sep="")
     cat("\n  -> [PNG]",ggfile,"\n")
     ggsave(ggfile,gg)
 
-    d <- full_join(d,seuilProbPip)
-    d$PropPip_good <- (pull(d,col_IndiceProbPip) >= pull(d,"seuilProbPip"))
+    d <- full_join(d,seuil_ProbPip)
+    d$PropPip_good <- (pull(d,col_IndiceProbPip) >= pull(d,"seuil_ProbPip"))
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
+
+
+    cat("\n   - IndiceProbPipParticipation_med & IndiceProbPipParticipation_max\n")
+
+    dd <- unique(d%>%select(c("num_site","Tron","date_format","sample_cat","expansion_direct","IndiceProbPip")))
+
+    dparti <- aggregate(IndiceProbPip ~ num_site + date_format + sample_cat + expansion_direct ,dd,median)
+    colnames(dparti)[5] <- "IndiceProbPipParticipation_med"
+
+    ddparti <- aggregate(IndiceProbPip ~ num_site + date_format+ sample_cat + expansion_direct,dd,max)
+    colnames(ddparti)[5] <- "IndiceProbPipParticipation_max"
+    dparti <- inner_join(dparti,ddparti)
+
+
+    dd2 <- unique(d%>%select(c("num_site","date_format","sample_cat","expansion_direct","IndiceProbPip")))
+    ddparti2 <- aggregate(IndiceProbPip ~ num_site + date_format+ sample_cat + expansion_direct,dd2,length)
+    colnames(ddparti2)[5] <- "IndiceProbPipParticipation_nb"
+
+    ggparti2 <- melt(ddparti2,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
+    gg <- ggplot(data=ggparti2,aes(value)) + geom_histogram() + facet_grid(sample_cat~expansion_direct)
+    gg <- gg + labs(x="indiceProbPip",title=paste("indiceProbPip",id))
+    ggfile <- paste("output/indiceProbPipParticipation_nbValueDiff_hist_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
+
+
+    gg <- ggplot(data=dparti,aes(x=IndiceProbPipParticipation_med,y=IndiceProbPipParticipation_max,colour=sample_cat,group=sample_cat))+ facet_grid(sample_cat~expansion_direct)
+    gg <- gg + geom_abline(slope=1,intercept=0,size=2,alpha=.3)
+    gg <- gg + geom_smooth()
+    gg <- gg + geom_point()
+    gg <- gg + labs(title=paste("IndicePropPip des partitions",id),colour="")
+
+    ggfile <- paste("output/indiceProbPipParticipation_plot_med_max_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
+
+    ggparti <- melt(dparti,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
+    gg <- ggplot(data=ggparti,aes(value)) + geom_histogram() + facet_grid(variable~expansion_direct)
+   ## gg <- gg + geom_vline(data=seuil_ProbPip,aes(xintercept=seuil_ProbPip),colour="red",size=2,alpha = .8)
+gg
+    gg <- gg + labs(x="indiceProbPip",title=paste("indiceProbPip",id))
+    ggfile <- paste("output/indiceProbPipParticipation_hist_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
 
 
 
     cat("\n   - IndiceDurPip\n")
-    print(seuilDurPip)
+    print(seuil_DurPip)
+
+    seuil_DurPip$seuilSup_DurPip_fig <- seuil_DurPip$seuilSup_DurPip + 0.5
+    seuil_DurPip$seuilInf_DurPip_fig <- seuil_DurPip$seuilInf_DurPip - 0.5
 
     gg <- ggplot(data=subset(d,!is.na(expansion_direct)),aes(IndiceDurPip)) + geom_histogram() + facet_grid(expansion_direct~.)
-    gg <- gg + geom_vline(data=seuilDurPip,aes(xintercept=seuilDurPip),colour="red",size=2,alpha=.8)
-
+    gg <- gg + geom_vline(data=seuil_DurPip,aes(xintercept=seuilInf_DurPip_fig),colour="red",size=2,alpha=.6)
+    gg <- gg + geom_vline(data=seuil_DurPip,aes(xintercept=seuilSup_DurPip_fig),colour="red",size=2,alpha=.6)
+    gg <- gg + labs(x="indiceDurPip",title=paste("indiceDurPip",id))
     ggfile <- paste("output/indiceDurPip_",id,".png",sep="")
     cat("\n  -> [PNG]",ggfile,"\n")
     ggsave(ggfile,gg)
 
-    d <- full_join(d,seuilDurPip)
-    d$DurPip_good <- (pull(d,col_IndiceDurPip) >= pull(d,"seuilDurPip"))
+    d <- full_join(d,seuil_DurPip)
+    d$DurPip_good <- (pull(d,col_IndiceDurPip) >= pull(d,"seuilInf_DurPip")) & (pull(d,col_IndiceDurPip) <= pull(d,"seuilSup_DurPip"))
 
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
+
+
+
+
+    cat("\n   - IndiceDurPipParticipation_med & IndiceDurPipParticipation_max\n")
+
+    dd <- unique(d%>%select(c("num_site","Tron","date_format","sample_cat","expansion_direct","IndiceDurPip")))
+
+    dparti <- aggregate(IndiceDurPip ~ num_site + date_format + sample_cat + expansion_direct ,dd,median)
+    colnames(dparti)[5] <- "IndiceDurPipParticipation_med"
+
+    ddparti <- aggregate(IndiceDurPip ~ num_site + date_format+ sample_cat + expansion_direct,dd,max)
+    colnames(ddparti)[5] <- "IndiceDurPipParticipation_max"
+    dparti <- inner_join(dparti,ddparti)
+
+
+    dd2 <- unique(d%>%select(c("num_site","date_format","sample_cat","expansion_direct","IndiceDurPip")))
+    ddparti2 <- aggregate(IndiceDurPip ~ num_site + date_format+ sample_cat + expansion_direct,dd2,length)
+    colnames(ddparti2)[5] <- "IndiceDurPipParticipation_nb"
+
+    ggparti2 <- melt(ddparti2,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
+    gg <- ggplot(data=ggparti2,aes(value)) + geom_histogram() + facet_grid(sample_cat~expansion_direct)
+    gg <- gg + labs(x="indiceDurPip_nb",title=paste("indiceDurPip, nombre de valeur par participation",id))
+    ggfile <- paste("output/indiceDurPipParticipation_nbValueDiff_hist_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
+
+
+    gg <- ggplot(data=dparti,aes(x=IndiceDurPipParticipation_med,y=IndiceDurPipParticipation_max,colour=sample_cat,group=sample_cat))+ facet_grid(sample_cat~expansion_direct)
+    gg <- gg + geom_abline(slope=1,intercept=0,size=2,alpha=.3)
+    gg <- gg + geom_smooth()
+    gg <- gg + geom_point()
+    gg <- gg + labs(title=paste("IndicePropPip des partitions",id),colour="")
+
+    ggfile <- paste("output/indiceDurPipParticipation_plot_med_max_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
+
+    ggparti <- melt(dparti,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
+    gg <- ggplot(data=ggparti,aes(value)) + geom_histogram() + facet_grid(variable~expansion_direct)
+   ## gg <- gg + geom_vline(data=seuil_DurPip,aes(xintercept=seuil_DurPip),colour="red",size=2,alpha = .8)
+gg
+    gg <- gg + labs(x="indiceDurPip_pariticipation_nb",title=paste("indiceDurPip, nombre de valeur par participation",id))
+    ggfile <- paste("output/indiceDurPipParticipation_hist_",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg)
+
 
 
     cat("\n   - SampleRate\n")
@@ -455,7 +612,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
         dd <- d[,c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,"strict_selection","flexible_selection")]
 
-        colpart <- c(col_sample,"expansion_direct",col_sp,setdiff(colnames(d),c(colnames(dd),col_IndiceDurPip,col_IndiceProbPip,col_SampleRate,"seuilProbPip","PropPip_good","seuilDurPip","DurPip_good","expansion","direct","sampleRate_good")))
+        colpart <- c(col_sample,"expansion_direct",col_sp,setdiff(colnames(d),c(colnames(dd),col_IndiceDurPip,col_IndiceProbPip,col_SampleRate,"seuil_ProbPip","PropPip_good","seuilInf_DurPip","DurPip_good","expansion","direct","sampleRate_good")))
 
         ddpart <-  unique(d[,colpart])
 
@@ -465,9 +622,6 @@ prepa_data <- function(id="DataRP_SpTron_90",
             stop("ERROR ! l'association des colonnes:\n",colnames(ddpart_sp_ed),"\nn'est pas unique\n")
 
         }
-
-
-
 
         cat("\n  - Data avec filtre strict\n")
         form <- as.formula(paste(col_nbcontact," ~  ",col_sample," + ",col_sp," + expansion_direct"))
@@ -590,15 +744,106 @@ prepa_data <- function(id="DataRP_SpTron_90",
 }
 
 
+historic_tron <- function(d,id=NULL) {
 
 
-summary_sample <- function(d) {
+    d <- subset(d,nb_contacts > 0)
+    d_first_year <- aggregate(year~num_site_txt,d,min)
+    colnames(d_first_year)[2] <- "first_year"
+    d_last_year <- aggregate(year~num_site_txt,d,max)
+    colnames(d_last_year)[2] <- "last_year"
+
+    d <- inner_join(d,d_first_year)
+    d <- inner_join(d,d_last_year)
 
 
+    dunique <- unique(d %>% select(c("num_site_txt","year","Tron","sample_cat")))
+   ## dd <- add_abs(dunique,col_gr=c("num_site_txt","year","sample_cat"),col_sp="Tron",col_value="survey")
 
+    dtron <- aggregate(year~num_site_txt+sample_cat+Tron,dunique,length)
+    colnames(dtron)[4] <- "nb_survey"
+
+    dmaxYear <- aggregate(nb_survey~num_site_txt+sample_cat,dtron,max)
+    colnames(dmaxYear)[3] <- "nbYear_ef"
+
+    dtron <- inner_join(dtron,dmaxYear)
+
+    dunique <- unique(dunique %>% select(-one_of(c("year"))))
+
+    dunique <- inner_join(dunique,d_first_year)
+    dunique <- inner_join(dunique,d_last_year)
+
+
+    dd <- inner_join(dtron,dunique)
+    dd$nbYear_th<- dd$last_year - dd$first_year + 1
+
+    dd$pro_th <- dd$nb_survey / dd$nbYear_th
+    dd$pro_ef <- dd$nb_survey / dd$nbYear_ef
+
+    dsite <- unique(dd %>% select(c("num_site_txt","sample_cat","first_year","nbYear_ef","nbYear_th")))
+
+    dsite$namesite <- paste(dsite$first_year," - ",dsite$num_site_txt," (",dsite$nbYear_ef,")",sep="")
+
+    dsite <- dsite %>% arrange(first_year,namesite)
+
+    dsite$numsite <- 1:nrow(dsite)
+    dsite$numsite <- sprintf("%03d", dsite$numsite)
+
+    dsite$namesite <- paste(dsite$first_year," - ",dsite$numsite," (",dsite$nbYear_ef,")",sep="")
+
+
+    dd <- inner_join(dd,dsite)
+
+    dd <- dd %>% arrange(num_site_txt,Tron)
+
+
+    gg <- ggplot(data=subset(dd,nbYear_ef >1),aes(x=num_site_txt,y=Tron,colour=pro_ef,size=nbYear_ef)) + facet_wrap(.~sample_cat,scales="free",nrow=2)
+    gg <- gg + geom_point()
+    gg <- gg + scale_colour_gradient2(low="#a50026",mid = "#fee08b",high="#063402",midpoint = .75)
+    gg <- gg + theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust=.5,size=8))
+    gg <- gg + labs(x="Les sites",y="Les tronçons ou points",title=paste("Qualité de suivis -",id),size="Nombre\n d'années\n de suivie\n du site",colour="Proportion\n des années\n suivis\n du tronçons")
+    ggfile <- paste("output/surveyTroncon",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg,width=18,height=8)
 
 }
 
+
+
+
+
+summary_sp <- function(d,id=NULL) {
+
+    d <- aggregate(cbind(d$nb_contacts_strict,d$nb_contacts_flexible)~idsite+ year + expansion_direct + espece,d,max)
+    colnames(d)[5:6] <- c("nb_contacts_strict","nb_contacts_flexible")
+    d$occ_strict <- ifelse(d$nb_contacts_strict>0,1,0)
+    d$occ_flexible <- ifelse(d$nb_contacts_flexible>0,1,0)
+
+    dagg <- aggregate(cbind(d$occ_strict,d$occ_flexible)~year + expansion_direct + espece, d, sum)
+    colnames(dagg)[4:5] <- c("cc_strict","occ_flexible")
+
+
+    dtot <-  aggregate(cbind(d$occ_strict,d$occ_flexible)~ espece, d, sum)
+    colnames(dtot)[2:3] <- c("tot_strict","tot_flexible")
+
+    dtot$name <- paste(dtot$espece," (",dtot$tot_strict,")",sep="")
+
+    dagg <- inner_join(dagg,dtot)
+
+
+    dagg$name <- factor(dagg$name, levels = dtot$name[order(dtot$tot_strict,decreasing=TRUE)])
+
+    gg <- ggplot(d=subset(dagg,tot_strict>10),aes(x=year,y=cc_strict,group=expansion_direct,colour=expansion_direct))+facet_wrap(.~name,scales="free_y",ncol=5)
+    gg <- gg + geom_point() + geom_line()
+    gg <- gg + labs(y="occurence",colour="",title=paste("les occurences -",id))
+    ggfile <- paste("output/occurence_especes",id,".png",sep="")
+    cat("\n  -> [PNG]",ggfile,"\n")
+    ggsave(ggfile,gg,width=16,height=8)
+
+browser()
+    dout <- ""
+
+}
 
 
 

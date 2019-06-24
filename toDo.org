@@ -1,30 +1,39 @@
-* DONE [#A] Preparation data [3/3]                            :data:function:
+* DONE [#A] Preparation data [3/4]                            :data:function:
 ** DONE [#A] my_read_delim()                                       :fonction:
 ** DONE [#A] add_abs() [2/2]                                       :fonction:
 - [X] fonction simple
 - [X] fonction générique
-** DONE [#A] Prepa_data()[9/9]                                     :fonction:
-- [X] import des tables
-- [X] ajout date
-- [X] ajout colonne direct_expansion
-- [X] ajout colonne type suivi
-- [X] flags [3/3]
-  - [X] seuilProb
-  - [X] seuilDur
-  - [X] seuilSR
-- [X] add_absence
-- [X] aggregate site [3/3]
-  - [X] add absence
-  - [X] sum nb_contact
-  - [X] update fisrt_columns
-- [X] check inner_join()
-- [X] rendre générique
-
+** DONE [#A] Prepa_data()[12/14]                                   :fonction:
+1. [X] import des tables
+2. [X] ajout date
+3. [X] ajout colonne direct_expansion
+4. [X] ajout colonne type suivi
+5. [X] flags [3/3]
+   - [X] seuilProb
+   - [X] seuilDur
+   - [X] seuilSR
+6. [X] add_absence
+7. [X] aggregate site [3/3]
+   - [X] add absence
+   - [X] sum nb_contact
+   - [X] update fisrt_columns
+8. [X] check inner_join()
+9. [X] rendre générique
+10. [X] seuil sup pour durée expansion
+   durées de séquences non conformes pour les données en expansion qui ne peuvent être supérieures à 0.5 secondes
+11. [X] ajout de la colonne ordre_passage
+12. [X] ajout titre au figures
+13. [ ] ajout colonnes IndiceDurPipPassage (med et max)
+14. [ ] ajout colonnes IndiceProbPipPassage (med et max)
 * TODO [#A] Trend especes [0/2]                                     :Analyse:
-** TODO qq verification[0/4]
-*** TODO historic_tron()                                           :fonction:
+** TODO qq verification[0/0]
+*** TODO historic_tron()[1/2]                                      :fonction:
+ - [X] ajout titre au figures
+ - [ ] sortie table
 des troncons sont ils moins suivie que d'autre au court des ans ? 
-*** TODO occurance par espèce                                      :fonction:
+*** TODO occurance par espèce [1/2]                                :fonction:
+ - [X] ajout titre au figures
+ - [ ] sortie stable
 *** TODO weight sur modèle mixte                             :methodo:biblio:
 ** TODO [#A] trend_sp()                                            :fonction:
 * TODO [#A] Trend groupes [/]                                       :Analyse:
