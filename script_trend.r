@@ -806,15 +806,24 @@ historic_tron <- function(d,id=NULL) {
     cat("\n  -> [PNG]",ggfile,"\n")
     ggsave(ggfile,gg,width=18,height=8)
 
+
+
+      filecsv <- paste("output/data_survey_troncon.csv",sep="")
+    cat("\n   --> [CSV]",filecsv)
+    write.table(d,filecsv,sep="\t",dec=".",row.names=FALSE)
+    cat("   DONE !\n")
+
+
+
 }
 
 
 
 
 
-summary_sp <- function(d,id=NULL) {
+summary_sp <- function(d,id=NULL,save=c("length","wide"),output="") {
 
-    d <- aggregate(cbind(d$nb_contacts_strict,d$nb_contacts_flexible)~idsite+ year + expansion_direct + espece,d,max)
+    d <- aggregate(cbind(d$nb_contacts_strict,d$nb_contacts_flexible)~num_site_txt+ year + expansion_direct + espece,d,max)
     colnames(d)[5:6] <- c("nb_contacts_strict","nb_contacts_flexible")
     d$occ_strict <- ifelse(d$nb_contacts_strict>0,1,0)
     d$occ_flexible <- ifelse(d$nb_contacts_flexible>0,1,0)
@@ -840,8 +849,37 @@ summary_sp <- function(d,id=NULL) {
     cat("\n  -> [PNG]",ggfile,"\n")
     ggsave(ggfile,gg,width=16,height=8)
 
-browser()
-    dout <- ""
+    if("wide" %in% c(save,output)) {
+        library(reshape2)
+        dout_wide <- dcast(d[,c("num_site_txt","expansion_direct","espece","year","nb_contacts_strict")],num_site_txt+expansion_direct+espece~year)
+        dout_wide <- dout_wide[order(dout_wide$num_site_txt,dout_wide$espece,dout_wide$expansion_direct),]
+    }
+
+    if("wide" %in% c(save)) {
+
+        filecsv <- paste("output/data_abondance_site_year_WIDE_",id,".csv",sep="")
+        cat("\n   --> [CSV]",filecsv)
+        write.table(dout_wide,filecsv,sep="\t",dec=".",row.names=FALSE)
+        cat("   DONE !\n")
+
+    }
+
+
+    if("wide" %in% c(save)) {
+
+        filecsv <- paste("output/data_abondance_site_year_LENGTH_",id,".csv",sep="")
+        cat("\n   --> [CSV]",filecsv)
+        write.table(d,filecsv,sep="\t",dec=".",row.names=FALSE)
+        cat("   DONE !\n")
+
+    }
+
+
+
+
+    if(output == "wide")  return(dout_wide)
+
+    if(output == "length")   return(d)
 
 }
 
