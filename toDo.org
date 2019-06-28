@@ -3,7 +3,7 @@
 ** DONE [#A] add_abs() [2/2]                                       :fonction:
 - [X] fonction simple
 - [X] fonction générique
-** DONE [#A] Prepa_data()[12/14]                                   :fonction:
+** DONE [#A] Prepa_data()[15/15]                                   :fonction:
 1. [X] import des tables
 2. [X] ajout date
 3. [X] ajout colonne direct_expansion
@@ -23,8 +23,16 @@
    durées de séquences non conformes pour les données en expansion qui ne peuvent être supérieures à 0.5 secondes
 11. [X] ajout de la colonne ordre_passage
 12. [X] ajout titre au figures
-13. [ ] ajout colonnes IndiceDurPipPassage (med et max)
-14. [ ] ajout colonnes IndiceProbPipPassage (med et max)
+13. [X] ajout colonnes IndiceDurPipPassage (med et max)
+14. [X] ajout colonnes IndiceProbPipPassage (med et max)
+15. [X] modifer etape de preparation des données [5/5]
+    1. [X] lecture
+    2. [X] ajout des zéros au niveau des tronçon
+    3. [X] aggregation au sites
+    4. [X] IndiceDurPip à reporté au tronçon
+    5. [X] NA bizarre associé expand.grid
+       1. [X] IndiceDurPip
+       2. [X] IndiceProbPip
 * TODO [#A] Trend especes [0/2]                                     :Analyse:
 ** TODO qq verification[0/0]
 *** TODO historic_tron()[1/2]                                      :fonction:
