@@ -11,6 +11,8 @@ for(p in vecPackage)
 
 
 source("../Vigie-Chiro_scripts/functions/GLMs/f_Sp_GLM_short.R")
+source("../Vigie-Chiro_scripts/functions/f_Coord_Bioclim.R")
+
 
 require(dplyr)
 require(tidyr)
@@ -373,7 +375,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
     library(lubridate)
     library(ggplot2)
 
-    ## d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilInfDurPipDirect=1.5;  seuilSupDurPipExp=0.5;  seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip");only_first_columns=FALSE;excluded_columns="commentaire"
+     d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilInfDurPipDirect=1.5;  seuilSupDurPipExp=0.5;  seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip");only_first_columns=FALSE;excluded_columns="commentaire"
 
     if(is.null(id))
         id <- Sys.Date()
@@ -412,7 +414,6 @@ prepa_data <- function(id="DataRP_SpTron_90",
                                         substr(d$site,23,nchar(d$site)),
                                  ifelse(d$sample_cat=="pedestre",
                                         substr(d$site,23,nchar(d$site)),NA)))
-                                        #    browser()
 
         d$num_site_txt<- sprintf(paste("%0",max(nchar(as.character(d$num_site))),"d",sep=""), d$num_site)
     }
@@ -441,16 +442,17 @@ prepa_data <- function(id="DataRP_SpTron_90",
     cat("-----------------------------------------\n\n")
 
 
-    library(data.table)
 
     seuilPassage <- c(150,220,285)
     seuilPassage <- tibble(julian=seuilPassage,date_year= format(as.POSIXct(paste(seuilPassage,2000),zone = "CET",format="%j %Y"),format="%d/%m"))
 
     period <- tibble(passage=as.character(1:2),period=c(paste(seuilPassage$date_year[1]," -> ",seuilPassage$date_year[2],sep=""),paste(seuilPassage$date_year[2]," -> ",seuilPassage$date_year[3],sep="")))
-
-    dparti <- unique(select(d,c("idsite","date_format","julian","year")))
-    dparti <- dparti %>% arrange()
+##browser()
+    dparti <- unique(d[,c("num_site_txt","date_format","julian","year")])
+    dparti <- dparti[order(dparti$num_site_txt,dparti$date_format),]# %>% arrange()
     dparti$idsite_year <- paste(dparti$idsite,dparti$year,sep="_")
+        library(data.table)
+
     ddparti<- data.table(dparti)
     ddparti <- ddparti[,ordre_passage:= 1:.N, by = idsite_year]
     dparti <- as_tibble(ddparti)
@@ -494,7 +496,10 @@ prepa_data <- function(id="DataRP_SpTron_90",
         if("id_site" %in% colnames(dsite)) colnames(dsite)[colnames(dsite)=="id_site"] <- "idsite"
         dsite <- dsite[,c("idsite","longitude","latitude")]
         dsite <- aggregate(.~idsite,data=dsite,mean)
-
+        dbio <- Coord_Bioclim(dsite,c("longitude","latitude"),write=FALSE,plot=FALSE,merge_data=TRUE,output_sp = FALSE)
+        dbio <- data.table(dbio)
+        dbio <- dbio[,setdiff(colnames(dbio), c("longitude","latitude"))]
+         dsite <- full_join(dsite,dbio)
         d <- inner_join(d,dsite)
         cat("\n ##Dimension de la table: \n")
         print(dim(d))
@@ -581,53 +586,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
-    ## partie de verification sans intéret
-    ##    cat("\n   - IndiceProbPipParticipation_med & IndiceProbPipParticipation_max\n")
-    ##
-    ##    dd <- unique(d%>%select(c("num_site","Tron","date_format","sample_cat","expansion_direct","IndiceProbPip")))
-    ##
-    ##    dparti <- aggregate(IndiceProbPip ~ num_site + date_format + sample_cat + expansion_direct ,dd,median)
-    ##    colnames(dparti)[5] <- "IndiceProbPipParticipation_med"
-    ##
-    ##    ddparti <- aggregate(IndiceProbPip ~ num_site + date_format+ sample_cat + expansion_direct,dd,max)
-    ##    colnames(ddparti)[5] <- "IndiceProbPipParticipation_max"
-    ##    dparti <- inner_join(dparti,ddparti)
-    ##
-    ##
-    ##    dd2 <- unique(d%>%select(c("num_site","date_format","sample_cat","expansion_direct","IndiceProbPip")))
-    ##    ddparti2 <- aggregate(IndiceProbPip ~ num_site + date_format+ sample_cat + expansion_direct,dd2,length)
-    ##    colnames(ddparti2)[5] <- "IndiceProbPipParticipation_nb"
-    ##
-    ##    ggparti2 <- melt(ddparti2,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
-    ##    gg <- ggplot(data=ggparti2,aes(value)) + geom_histogram() + facet_grid(sample_cat~expansion_direct)
-    ##    gg <- gg + labs(x="indiceProbPip",title=paste("indiceProbPip",id))
-    ##    ggfile <- paste("output/indiceProbPipParticipation_nbValueDiff_hist_",id,".png",sep="")
-    ##    cat("\n  -> [PNG]",ggfile,"\n")
-    ##    ggsave(ggfile,gg)
-    ##
-    ##
-    ##    gg <- ggplot(data=dparti,aes(x=IndiceProbPipParticipation_med,y=IndiceProbPipParticipation_max,colour=sample_cat,group=sample_cat))+ facet_grid(sample_cat~expansion_direct)
-    ##    gg <- gg + geom_abline(slope=1,intercept=0,size=2,alpha=.3)
-    ##    gg <- gg + geom_smooth()
-    ##    gg <- gg + geom_point()
-    ##    gg <- gg + labs(title=paste("IndicePropPip des partitions",id),colour="")
-    ##
-    ##    ggfile <- paste("output/indiceProbPipParticipation_plot_med_max_",id,".png",sep="")
-    ##    cat("\n  -> [PNG]",ggfile,"\n")
-    ##    ggsave(ggfile,gg)
-    ##
-    ##    ggparti <- melt(dparti,id.vars=c("num_site","date_format","sample_cat","expansion_direct"))
-    ##    gg <- ggplot(data=ggparti,aes(value)) + geom_histogram() + facet_grid(variable~expansion_direct)
-    ##   ## gg <- gg + geom_vline(data=seuil_ProbPip,aes(xintercept=seuil_ProbPip),colour="red",size=2,alpha = .8)
-    ##gg
-    ##    gg <- gg + labs(x="indiceProbPip",title=paste("indiceProbPip",id))
-    ##    ggfile <- paste("output/indiceProbPipParticipation_hist_",id,".png",sep="")
-    ##    cat("\n  -> [PNG]",ggfile,"\n")
-    ##    ggsave(ggfile,gg)
-    ##
-    ##
-    ##
-    cat("\n   - IndiceDurPip\n")
+     cat("\n   - IndiceDurPip\n")
     print(seuil_DurPip)
 
     seuil_DurPip$seuilSup_DurPip_fig <- seuil_DurPip$seuilSup_DurPip + 0.5
@@ -1037,7 +996,7 @@ main.glm <- function(id=NULL,
                      col_sp="espece",
                      col_date_julien="julian",
                      col_site="site",col_nbcontact="nb_contacts",assessIC= TRUE,listSp=NULL,tabsp="library/SpeciesList.csv",
-                     annees=NULL,figure=TRUE,
+                     first_year=NULL,last_year=NULL,figure=TRUE,
                      description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites"),
                      tendanceSurFigure=TRUE,tendanceGroupSpe = FALSE,
                      seuilOccu=14,   seuilSignif=0.05,seuilAbond=NA,ecritureStepByStep=TRUE,doBeep=FALSE) {
@@ -1053,9 +1012,18 @@ main.glm <- function(id=NULL,
     require(ggplot2)
     require(data.table)
 
+
+    start <- Sys.time() ## heure de demarage
+
+    cat("\n\n ============================================= \n")
+    cat("     START: ",format(start, "%d-%m-%Y %HH%M"),"  ... \n ")
+    cat(" ============================================= \n")
+
     if(is.null(id))
         id <- Sys.Date()
     nb_data <- length(donneesAll)
+
+
 
     if(length(donneesName) != nb_data) stop("le nombre de nom des donnees 'donneesName' ne correspond pas au nombre de données !!\n")
 
@@ -1072,6 +1040,14 @@ main.glm <- function(id=NULL,
         donneesAll[[i]]  <- data.table(data=donneesName[i],donneesAll[[i]] )
         donnees <- rbind(donnees,donneesAll[[i]] )
     }
+
+    filtreAn <- FALSE
+    if(is.null(first_year)) first_year <- min(donnees$year) else filtreAn <- TRUE
+    if(is.null(last_year)) last_year <- max(donnees$year) else filtreAn <- TRUE
+
+    annees <- first_year:last_year
+
+    if(filtreAn) donnees <- subset(donnees,year >= first_year & year <= last_year)
 
 
     if(!(is.null(listSp)))
@@ -1171,7 +1147,8 @@ main.glm <- function(id=NULL,
         i <- i+1
     }
 
-
+    tabAn1 <- NULL
+    tab1 <- NULL
     dAn <- NULL
     dTrend <- NULL
     i <- 0
@@ -1195,6 +1172,7 @@ main.glm <- function(id=NULL,
 
             d <- subset(donnees,espece==sp & data == dn)
 
+
             ## des variable annees
             annee <- sort(unique(donnees$year))
             nbans <- length(annee)
@@ -1210,300 +1188,338 @@ main.glm <- function(id=NULL,
 ### shortlist <- tabsp[sp,"shortlist"]
             ## indic espèce utilis?our le calcul des indicateurs par groupe de specialisation
             ##indic <- tabsp[sp,"indicateur"]
+            med_occ <- median(subset(dgg, espece == sp & courbe2 == "occ_direct" &  data == dn)$val)
+            if(med_occ <= 2) {
+                cat(" mediane des occurences inferieure ou égale à 2 \n")
+                cat("   espece trop rare\n")
+                cat(" -> modèle non réalisé\n\n")
 
-            cat("\nModèle variation abondance\n--------------------\n")
+            } else {  # END if(med_occ <= 2)
 
-            ## GLM variation d abondance
-            if(method=="GLM") {
-                formule <- as.formula("nb_contacts_strict~as.factor(num_site_txt)+I(julian^2) + expansion_direct + nb_Tron_strict +longitude + latitude + sample_cat + as.factor(year)")
+                cat("\nModèle variation abondance\n--------------------\n")
 
-                glm1 <- try(glm(formule,data=d,family=quasipoisson),silent=TRUE)
-                if(class(glm1)[1] != "try-error") {
-                    sglm1 <- summary(glm1)
-                    sglm1 <- coefficients(sglm1)
-                    sglm1 <- tail(sglm1,pasdetemps)
-                    coefan <- as.numeric(as.character(sglm1[,1]))
-                    ## coefannee vecteur des variation d'abondance par annee back transformee
-                    coefannee <- c(1,exp(coefan))
-                    erreuran <- as.numeric(as.character(sglm1[,2]))
-                    ## erreur standard back transformee
-                    erreurannee1 <- c(0,erreuran*exp(coefan))
-                    pval <- c(1,as.numeric(as.character(sglm1[,4])))
+                ## GLM variation d abondance
+                if(method=="GLM") {
+                    formule <- as.formula("nb_contacts_strict~as.factor(num_site_txt)+I(julian^2) + expansion_direct + nb_Tron_strict +longitude + latitude + sample_cat + as.factor(year)")
 
-                    ## calcul des intervalle de confiance
-                    if(assessIC) {
-                        library(arm)
-                        glm1.sim <- sim(glm1)
-                        ic_inf_sim <- c(1,exp(tail(apply(coef(glm1.sim), 2, quantile,.025),pasdetemps)))
-                        ic_sup_sim <- c(1,exp(tail(apply(coef(glm1.sim), 2, quantile,.975),pasdetemps)))
-                    } else {
-                        ic_inf_sim <- NA
-                        ic_sup_sim <- NA
+                    glm1 <- try(glm(formule,data=d,family=quasipoisson),silent=TRUE)
+                    if(class(glm1)[1] != "try-error") {
+                        sglm1 <- summary(glm1)
+                        sglm1 <- coefficients(sglm1)
+                        sglm1 <- tail(sglm1,pasdetemps)
+                        coefan <- as.numeric(as.character(sglm1[,1]))
+                        ## coefannee vecteur des variation d'abondance par annee back transformee
+                        coefannee <- c(1,exp(coefan))
+                        erreuran <- as.numeric(as.character(sglm1[,2]))
+                        ## erreur standard back transformee
+                        erreurannee1 <- c(0,erreuran*exp(coefan))
+                        pval <- c(1,as.numeric(as.character(sglm1[,4])))
 
-                    }
+                        ## calcul des intervalle de confiance
+                        if(assessIC) {
+                            library(arm)
+                            glm1.sim <- sim(glm1)
+                            ic_inf_sim <- c(1,exp(tail(apply(coef(glm1.sim), 2, quantile,.025),pasdetemps)))
+                            ic_sup_sim <- c(1,exp(tail(apply(coef(glm1.sim), 2, quantile,.975),pasdetemps)))
+                        } else {
+                            ic_inf_sim <- NA
+                            ic_sup_sim <- NA
 
-
-                    ## tab1 table pour la realisation des figures
-                    tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,year=annee,val=coefannee,
-                                       LL=ic_inf_sim,UL=ic_sup_sim,
-                                       catPoint=ifelse(pval<seuilSignif,"significatif",NA),pval,
-                                       courbe="abondance",courbe2=vpan[1],
-                                       panel=vpan[1])
-                    ## netoyage des intervalle de confiance superieur très très grande
-                    if(assessIC) {
-                        tab1$UL <- ifelse( tab1$val==0,NA,tab1$UL)
-                        tab1$UL <-  ifelse(tab1$UL == Inf, NA,tab1$UL)
-                        tab1$UL <-  ifelse(tab1$UL > 1.000000e+20, NA,tab1$UL)
-                        tab1$UL[1] <- 1
-                        tab1$val <-  ifelse(tab1$val > 1.000000e+20,1.000000e+20,tab1$val)
-                    }
-                    ## indice de surdispersion
-
-                    if(assessIC) dispAn <- glm1$deviance/glm1$null.deviance else dispAn <- glm1$deviance/glm1$nulldev
-
-
-                    ## tabAn table de sauvegarde des resultats
-                    tabAn1 <- data.table(id,data=dn,espece=sp, nom_espece= nomSp ,year = tab1$year,
-                                         abondance_relative=round(tab1$val,3),
-                                         IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
-                                         erreur_standard = round(erreurannee1,4),
-                                         p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),
-                                         dispersion=dispAn)
-
-                    tabAn1 <- inner_join(tabAn1,dDescri)
-                } # END if(class(glm1)[1] != "try-error")
-
-            } # END if(method=="GLM")
-
-
-
-            if(method == "glmmTMB") {
-                repout <- paste("output/",id,"/",sep="")
-                md1 <- Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep)
-                smd1 <- md1[[2]]
-                smd1 <- smd1[2:nbans,]
-
-                coefan <- smd1[,2]
-                ## coefannee vecteur des variation d'abondance par annee back transformee
-                coefannee <- c(1,exp(coefan))
-                erreuran <- smd1[,3]
-                ## erreur standard back transformee
-                erreurannee1 <- c(0,erreuran*exp(coefan))
-                pval <- c(1,smd1[,5])
-                vif1 <- c(0,smd1[,6])
-
-                md1IC <- confint(md1[[1]])
-                md1IC <- md1IC[2:nbans,]
-                ic_inf_sim <-  c(1,exp(md1IC[,1]))
-                ic_sup_sim <-  c(1,exp(md1IC[,2]))
-
-                tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,year=annee,val=coefannee,
-                                   LL=ic_inf_sim,UL=ic_sup_sim,
-                                   catPoint=ifelse(pval<seuilSignif,"significatif",NA),pval,
-                                   courbe="abondance",courbe2=vpan[1],
-                                   panel=vpan[1])
-
-                ## netoyage des intervalle de confiance superieur très très grande
-                if(assessIC) {
-                    tab1$UL <- ifelse( tab1$val==0,NA,tab1$UL)
-                    tab1$UL <-  ifelse(tab1$UL == Inf, NA,tab1$UL)
-                    tab1$UL <-  ifelse(tab1$UL > 1.000000e+20, NA,tab1$UL)
-                    tab1$UL[1] <- 1
-                    tab1$val <-  ifelse(tab1$val > 1.000000e+20,1.000000e+20,tab1$val)
-                }
-
-
-                tabAn1 <- data.table(id,data=dn,espece=sp, nom_espece= nomSp ,year = tab1$year,
-                                     abondance_relative=round(tab1$val,3),
-                                     IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
-                                     erreur_standard = round(erreurannee1,4),
-                                     p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),
-                                     vif=vif1)
-
-
-                tabAn1 <- inner_join(tabAn1,dDescri)
-
-            } #END  if(method == "glmmTMB")
-
-            dAn <- rbind(dAn,tabAn1)
-            dgg <- rbind(dgg,tab1)#,tab2)
-
-
-
-        cat("\nModèle tendance\n---------------\n")
-
-        if(method == "GLM") {
-            ## GLM tendance generale sur la periode
-            formule <- as.formula("nb_contacts_strict~as.factor(num_site_txt)+I(julian^2) + expansion_direct + nb_Tron_strict +longitude + latitude + sample_cat + year")
-
-
-            md2 <- try(glm(formule,data=d,family=quasipoisson),silent=TRUE)
-
-            if(class(md2)[1] != "try-error") {
-                smd2 <- summary(md2)
-                smd2 <- coefficients(smd2)
-                smd2 <- tail(smd2,1)
-
-                ## tendences sur la periode
-                coefan <- as.numeric(as.character(smd2[,1]))
-                trend <- round(exp(coefan),3)
-                ## pourcentage de variation sur la periode
-                pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
-                pval <- as.numeric(as.character(smd2[,4]))
-
-                erreuran <- as.numeric(as.character(smd2[,2]))
-                ## erreur standard
-                erreurannee2 <- erreuran*exp(coefan)
-
-
-                ## calcul des intervalle de confiance
-                if(assessIC) {
-                    md2.sim <- sim(md2)
-                    LL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.025),1)),3)
-                    UL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.975),1)),3)
-                } else {
-                    LL <- NA
-                    UL <- NA
-                }
-
-                ## tab1t table utile pour la realisation des figures
-                tab1t <- data.frame(Est=trend,
-                                    LL , UL,
-                                    pourcent=pourcentage,signif=pval<seuilSignif,pval)
-
-
-                trendsignif <- tab1t$signif
-                pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
-                ## surdispersion
-
-                if(assessIC) dispTrend <- md2$deviance/md2$null.deviance else dispTrend <- md2$deviance/md2$nulldev
-
-
-
-                ## classement en categorie incertain
-
-                if(assessIC) {
-                    if(dispTrend > 2 |dispAn > 2 |  median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) catIncert <- "Incertain" else catIncert <-"bon"
-                    vecLib <-  NULL
-                    if(dispTrend > 2 |dispAn > 2| median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
-                        if(median( tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
-                            vecLib <- c(vecLib,"espece trop rare")
                         }
-                        if(dispTrend > 2 |dispAn > 2) {
-                            vecLib <- c(vecLib,"deviance")
+
+
+                        ## tab1 table pour la realisation des figures
+                        tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,year=annee,val=coefannee,
+                                           LL=ic_inf_sim,UL=ic_sup_sim,
+                                           catPoint=ifelse(pval<seuilSignif,"significatif",NA),pval,
+                                           courbe="abondance",courbe2=vpan[1],
+                                           panel=vpan[1])
+                        ## netoyage des intervalle de confiance superieur très très grande
+                        if(assessIC) {
+                            tab1$UL <- ifelse( tab1$val==0,NA,tab1$UL)
+                            tab1$UL <-  ifelse(tab1$UL == Inf, NA,tab1$UL)
+                            tab1$UL <-  ifelse(tab1$UL > 1.000000e+20, NA,tab1$UL)
+                            tab1$UL[1] <- 1
+                            tab1$val <-  ifelse(tab1$val > 1.000000e+20,1.000000e+20,tab1$val)
                         }
-                    }
-                    raisonIncert <-  paste(vecLib,collapse=" et ")
-                } else {
-                    catIncert <- NA
-                    raisonIncert <- NA
-                }
+                        ## indice de surdispersion
 
-                ## affectation des tendence EBCC
-                catEBCC <- NA
-                if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
-                ## table complete de resultats
-
-                tabTrend1 <- data.frame(
-                    id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
-                    nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
-                    tendance = as.vector(tab1t$Est) ,  IC_inferieur=as.vector(LL) , IC_superieur = as.vector(UL),pourcentage_variation=as.vector(pourcent),
-                    erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
-                    significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
-                    mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
-                    mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
-                    valide = catIncert,raison_incertitude = raisonIncert)
-
-            } # END if(class(md2)[1] != "try-error")
-        } # END if(method == "GLM")
-
-        if(method == "glmmTMB") {
-            repout <- paste("output/",id,"/",sep="")
-            md2 <- Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep)
-            smd2 <- md2[[2]]
-            smd2 <- smd2[2,]
+                        if(assessIC) dispAn <- glm1$deviance/glm1$null.deviance else dispAn <- glm1$deviance/glm1$nulldev
 
 
-            coefan <- smd2[,2]
-            trend <- round(exp(coefan),3)
-            ## pourcentage de variation sur la periode
-            pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
-            pval <- smd2[,5]
+                        ## tabAn table de sauvegarde des resultats
+                        tabAn1 <- data.table(id,data=dn,espece=sp, nom_espece= nomSp ,year = tab1$year,
+                                             abondance_relative=round(tab1$val,3),
+                                             IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
+                                             erreur_standard = round(erreurannee1,4),
+                                             p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),
+                                             dispersion=dispAn)
 
-            erreuran <- smd2[,2]
-            ## erreur standard
-            erreurannee2 <- erreuran*exp(coefan)
+                        tabAn1 <- inner_join(tabAn1,dDescri)
+                    } # END if(class(glm1)[1] != "try-error")
 
-            vif2 <- smd2[,6]
-
-
-            md2IC <- confint(md2[[1]])
-            md2IC <- md2IC[2,]
-            ic_inf_sim <-  round(exp(md2IC[1]),3)
-            ic_sup_sim <-  round(exp(md2IC[2]),3)
-
-
-            ## tab1t table utile pour la realisation des figures
-            tab1t <- data.frame(Est=trend,
-                                LL=ic_inf_sim , UL=ic_sup_sim,
-                                pourcent=pourcentage,signif=pval<seuilSignif,pval,vif2)
-
-
-            trendsignif <- tab1t$signif
-            pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
-            ## surdispersion
-
-            ## affectation des tendence EBCC
-            catEBCC <- NA
-            if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
-            ## table complete de resultats
-
-
-            vecLib <-  NULL
-            if(vif2 > 2 | any(vif1 > 2) |  median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
-                catIncert <- "Incertain"
-                if(median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu)
-                    vecLib <- c(vecLib,"espece trop rare")
-
-                if(vif2 > 2) vecLib <- c(vecLib,"vif tendance")
-                if(any(vif1 > 2)) vecLib <- c(vecLib,"vif variation")
-
-            } else {
-                catIncert <-"bon"
-            }
-
-
-            raisonIncert <-  paste(vecLib,collapse=" et ")
-
-
-            tabTrend1 <- data.frame(
-                id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
-                nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
-                tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,pourcentage_variation=as.vector(pourcent),
-                erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
-                significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
-                mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
-                mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
-                valide = catIncert,raison_incertitude = raisonIncert)
-
-
-        } # END if(method == "glmmTMB")
-
-        dTrend <- rbind(dTrend,tabTrend1)
-
-        } #END for(dn in donneesName)
-
-    ##   if(assessIC)  listGLMsp <- list(list(glm1,glm1.sim,md2,md2.sim)) else  listGLMsp <- list(list(glm1,md2))
-    ##   names(listGLMsp)[[1]] <-sp
-    ##   fileSaveGLMsp <- paste(fileSaveGLMs,"_",sp,".Rdata",sep="")
-
-    ##   save(listGLMsp,file=fileSaveGLMsp)
-    ##   cat("--->",fileSaveGLMsp,"\n")
-    ##   flush.console()
+                } # END if(method=="GLM")
 
 
 
-    ## les figures
+                if(method == "glmmTMB") {
+                    repout <- paste("output/",id,"/",sep="")
+                    md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep),silent=TRUE)
+
+                    if(class(md1)[1] != "try-error") {
+                        smd1 <- md1[[2]]
+
+                        vif1_mean <- mean(smd1$VIF)
+                        vif1_max <- max(smd1$VIF)
+                        smd1 <- smd1[2:nbans,]
+
+                        coefan <- smd1[,2]
+                        ## coefannee vecteur des variation d'abondance par annee back transformee
+                        coefannee <- c(1,exp(coefan))
+                        erreuran <- smd1[,3]
+                        ## erreur standard back transformee
+                        erreurannee1 <- c(0,erreuran*exp(coefan))
+                        pval <- c(1,smd1[,5])
+                        vif1 <- c(0,smd1[,6])
+
+                        md1IC <- confint(md1[[1]])
+                        md1IC <- md1IC[2:nbans,]
+                        ic_inf_sim <-  c(1,exp(md1IC[,1]))
+                        ic_sup_sim <-  c(1,exp(md1IC[,2]))
+
+
+                        tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,year=annee,val=coefannee,
+                                           LL=ic_inf_sim,UL=ic_sup_sim,
+                                           catPoint=ifelse(pval<seuilSignif,"significatif",NA),pval,
+                                           courbe="abondance",courbe2=vpan[1],
+                                           panel=vpan[1])
+
+                        ## netoyage des intervalle de confiance superieur très très grande
+                        if(assessIC) {
+                            tab1$UL <- ifelse( tab1$val==0,NA,tab1$UL)
+                            tab1$UL <-  ifelse(tab1$UL == Inf, NA,tab1$UL)
+                            tab1$UL <-  ifelse(tab1$UL > 1.000000e+20, NA,tab1$UL)
+                            tab1$UL[1] <- 1
+                            tab1$val <-  ifelse(tab1$val > 1.000000e+20,1.000000e+20,tab1$val)
+                        }
+
+
+                        tabAn1 <- data.table(id,data=dn,espece=sp, nom_espece= nomSp ,year = tab1$year,
+                                             abondance_relative=round(tab1$val,3),
+                                             IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
+                                             erreur_standard = round(erreurannee1,4),
+                                             p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),
+                                             vif=vif1,vif_mean = vif1_mean,vif_max = vif1_max)
+
+
+                        tabAn1 <- inner_join(tabAn1,dDescri)
+                    } # END if(class(md1)[1] != "try-error")
+
+                } #END  if(method == "glmmTMB")
+
+                dAn <- rbind(dAn,tabAn1)
+                dgg <- rbind(dgg,tab1)#,tab2)
+
+
+
+                cat("\nModèle tendance\n---------------\n")
+
+                if(method == "GLM") {
+                    ## GLM tendance generale sur la periode
+                    formule <- as.formula("nb_contacts_strict~as.factor(num_site_txt)+I(julian^2) + expansion_direct + nb_Tron_strict +longitude + latitude + sample_cat + year")
+
+
+                    md2 <- try(glm(formule,data=d,family=quasipoisson),silent=TRUE)
+
+                    if(class(md2)[1] != "try-error") {
+                        smd2 <- summary(md2)
+                        smd2 <- coefficients(smd2)
+                        smd2 <- tail(smd2,1)
+
+                        ## tendences sur la periode
+                        coefan <- as.numeric(as.character(smd2[,1]))
+                        trend <- round(exp(coefan),3)
+                        ## pourcentage de variation sur la periode
+                        pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
+                        pval <- as.numeric(as.character(smd2[,4]))
+
+                        erreuran <- as.numeric(as.character(smd2[,2]))
+                        ## erreur standard
+                        erreurannee2 <- erreuran*exp(coefan)
+
+
+                        ## calcul des intervalle de confiance
+                        if(assessIC) {
+                            md2.sim <- sim(md2)
+                            LL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.025),1)),3)
+                            UL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.975),1)),3)
+                        } else {
+                            LL <- NA
+                            UL <- NA
+                        }
+
+                        ## tab1t table utile pour la realisation des figures
+                        tab1t <- data.frame(Est=trend,
+                                            LL , UL,
+                                            pourcent=pourcentage,signif=pval<seuilSignif,pval)
+
+
+                        trendsignif <- tab1t$signif
+                        pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
+                        ## surdispersion
+
+                        if(assessIC) dispTrend <- md2$deviance/md2$null.deviance else dispTrend <- md2$deviance/md2$nulldev
+
+
+
+                        ## classement en categorie incertain
+
+                        if(assessIC) {
+                            if(dispTrend > 2 |dispAn > 2 |  median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) catIncert <- "Incertain" else catIncert <-"bon"
+                            vecLib <-  NULL
+                            if(dispTrend > 2 |dispAn > 2| median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
+                                if(median( tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
+                                    vecLib <- c(vecLib,"espece trop rare")
+                                }
+                                if(dispTrend > 2 |dispAn > 2) {
+                                    vecLib <- c(vecLib,"deviance")
+                                }
+                            }
+                            raisonIncert <-  paste(vecLib,collapse=" et ")
+                        } else {
+                            catIncert <- NA
+                            raisonIncert <- NA
+                        }
+
+                        ## affectation des tendence EBCC
+                        catEBCC <- NA
+                        if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
+                        ## table complete de resultats
+
+                        tabTrend1 <- data.frame(
+                            id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
+                            nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
+                            tendance = as.vector(tab1t$Est) ,  IC_inferieur=as.vector(LL) , IC_superieur = as.vector(UL),pourcentage_variation=as.vector(pourcent),
+                            erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
+                            significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
+                            mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
+                            mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
+                            valide = catIncert,raison_incertitude = raisonIncert)
+
+                    } # END if(class(md2)[1] != "try-error")
+                } # END if(method == "GLM")
+
+                if(method == "glmmTMB") {
+                    repout <- paste("output/",id,"/",sep="")
+                    md2 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep),silent=TRUE)
+                    if(class(md2)[1] != "try-error") {
+                        smd2 <- md2[[2]]
+
+                        vif2_mean <- mean(smd2$VIF)
+                        vif2_max <- max(smd2$VIF)
+
+                        smd2 <- smd2[2,]
+
+
+                        coefan <- smd2[,2]
+                        trend <- round(exp(coefan),3)
+                        ## pourcentage de variation sur la periode
+                        pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
+                        pval <- smd2[,5]
+
+                        erreuran <- smd2[,2]
+                        ## erreur standard
+                        erreurannee2 <- erreuran*exp(coefan)
+
+                        vif2 <- smd2[,6]
+
+
+                        md2IC <- confint(md2[[1]])
+                        md2IC <- md2IC[2,]
+                        ic_inf_sim <-  round(exp(md2IC[1]),3)
+                        ic_sup_sim <-  round(exp(md2IC[2]),3)
+
+
+                        ## tab1t table utile pour la realisation des figures
+                        tab1t <- data.frame(Est=trend,
+                                            LL=ic_inf_sim, UL=ic_sup_sim,
+                                            pourcent=pourcentage,signif=pval<seuilSignif,pval,
+                                            vif=vif2,vif_mean=vif2_mean,vif_max=vif2_max)
+
+                        trendsignif <- tab1t$signif
+                        pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
+                        ## surdispersion
+
+                        ## affectation des tendence EBCC
+                        catEBCC <- NA
+                        if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
+                        ## table complete de resultats
+
+                        vecLib <-  NULL
+                        if(any(is.na(c(vif1_mean,vif2_mean)))) {
+                            catIncert <- "Incertain"
+                            if(is.na(vif1_mean)) vecLib <- paste(vecLib,"VIF variation non calculable")
+                            if(is.na(vif2_mean)) vecLib <- paste(vecLib,"VIF tendance non calculable")
+                        } else {
+                            if(vif1_mean > 2 | vif2_mean > 2 | vif1_max > 5 | vif2_max > 5 |  median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
+                                catIncert <- "Incertain"
+                                if(median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu)
+                                    vecLib <- c(vecLib,"espece trop rare")
+
+                                if(vif2_mean > 2) vecLib <- c(vecLib,"moyenne vif tendance sup à 2")
+                                if(vif1_mean > 2) vecLib <- c(vecLib,"moyenne vif variation sup à 2")
+                                if(vif2_max > 2) vecLib <- c(vecLib,"max vif tendance sup à 5")
+                                if(vif1_max > 2) vecLib <- c(vecLib,"max vif variation sup à 5")
+
+                            } else {
+                                catIncert <-"bon"
+                            }
+
+                        }
+                        raisonIncert <-  paste(vecLib,collapse=" et ")
+
+
+                        tabTrend1 <- data.frame(
+                            id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
+                            nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
+                            tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,pourcentage_variation=as.vector(pourcent),
+                            erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
+                            vif = vif2,vif_mean=vif2_mean,vif_max=vif2_max,
+                            significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
+                            mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
+                            mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
+                            valide = catIncert,raison_incertitude = raisonIncert)
+                    } # END if(class(md2)[1] != "try-error")
+
+                } # END if(method == "glmmTMB")
+            } # END ELSE if(med_occ <= 2)
+            dTrend <- rbind(dTrend,tabTrend1)
+
+        } # END for(dn in donneesName)
+
+        ##   if(assessIC)  listGLMsp <- list(list(glm1,glm1.sim,md2,md2.sim)) else  listGLMsp <- list(list(glm1,md2))
+        ##   names(listGLMsp)[[1]] <-sp
+        ##   fileSaveGLMsp <- paste(fileSaveGLMs,"_",sp,".Rdata",sep="")
+
+        ##   save(listGLMsp,file=fileSaveGLMsp)
+        ##   cat("--->",fileSaveGLMsp,"\n")
+        ##   flush.console()
+
+        if(ecritureStepByStep) {
+            write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
+            cat("--->",filesavedgg,"\n")
+            write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
+            cat("--->",filesaveAn,"\n")
+            write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
+            cat("--->",filesaveTrend,"\n")
+
+            flush.console()
+
+        }
+
+
+
+        ## les figures
         if(figure) {
             ## table complete pour la figure en panel par ggplot2
             ## table pour graphe en panel par ggplot2
@@ -1520,17 +1536,6 @@ main.glm <- function(id=NULL,
         } # END  if(figure)
 
 
-        if(ecritureStepByStep) {
-            write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
-            cat("--->",filesavedgg,"\n")
-            write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
-            cat("--->",filesaveAn,"\n")
-            write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
-            cat("--->",filesaveTrend,"\n")
-
-            flush.console()
-
-        }
 
 
     } # END for(sp in listSp)
@@ -1545,8 +1550,13 @@ main.glm <- function(id=NULL,
 
     flush.console()
 
+    end <- Sys.time() ## heure de fin
+    diff <- end-start
+    diff <- paste(round(diff,1),units(diff))
 
-
+    cat("\n\n=====================================================\n")
+    cat("\n  ", format(end, "%d-%m-%Y %HH%M")," -> ",diff,"\n")
+    cat("\n=====================================================\n\n")
 }
 
 
