@@ -3,7 +3,7 @@
 ** DONE [#A] add_abs() [2/2]                                       :fonction:
 - [X] fonction simple
 - [X] fonction générique
-** DONE [#A] Prepa_data()[15/18]                                   :fonction:
+** DONE [#A] Prepa_data()[17/17]                                   :fonction:
 1. [X] import des tables
 2. [X] ajout date
 3. [X] ajout colonne direct_expansion
@@ -33,13 +33,8 @@
     5. [X] NA bizarre associé expand.grid
        1. [X] IndiceDurPip
        2. [X] IndiceProbPip
-16. [ ] rassembler tout les myo myonat myodo
-17. [ ] ajoute les bioclim
-18. [ ] grouper années faible
-    1. [ ] si modele ne tourne pas
-       1. [ ] condition valeur pas de SD NA et de même ordre grandeur
-       2. [ ] SD doit être inf à 2 ou 3
-    2. [ ] aggreger avec proche la plus faible
+16. [X] rassembler tout les myo myonat myodo
+17. [X] ajoute les bioclim
 * TODO [#A] Trend especes [1/2]                                     :Analyse:
 ** DONE qq verification[2/3]
 *** DONE historic_tron()[2/2]                                      :fonction:
@@ -50,12 +45,17 @@ des troncons sont ils moins suivie que d'autre au court des ans ?
  - [X] ajout titre au figures
  - [X] sortie stable
 *** TODO weight sur modèle mixte                             :methodo:biblio:
-** TODO [#A] trend_sp()                                            :fonction:
- - [ ] variable bioclim 1 et 12
- - [ ] VIF modèle année continu
- - [ ] pas de VIF pour année en fact
- - [ ] dispersion il faut du coup avec la négative binomial regarder aussi la résidual  dev sur ddl résidual
- - [ ] thêta n est pas extravagant il devrait idéalement être de qq unité mais si possible pas un truc du style 0.000001 ou 10 ^6
+** TODO [#A] trend_sp()[5/5]                                       :fonction:
+ - [X] variable bioclim 1 et 12
+ - [X] VIF modèle année continu
+ - [X] pas de VIF pour année en fact
+ - [X] dispersion il faut du coup avec la négative binomial regarder aussi la résidual  dev sur ddl résidual
+ - [X] thêta n est pas extravagant il devrait idéalement être de qq unité mais si possible pas un truc du style 0.000001 ou 10 ^6
+ - [ ] grouper années faible
+    1. [ ] si modele ne tourne pas
+       1. [ ] condition valeur pas de SD NA et de même ordre grandeur
+       2. [ ] SD doit être inf à 2 ou 3
+    2. [ ] aggreger avec proche la plus faible
 
 * TODO [#A] Trend groupes [/]                                       :Analyse:
 

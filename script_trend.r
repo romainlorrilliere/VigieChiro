@@ -28,6 +28,9 @@ require(beepr)
 require(corrplot)
 
 
+## clearing the warnings
+assign("last.warning", NULL, envir = baseenv())
+
 
 ##' .. content for \description{} (no empty lines) ..
 ##'
@@ -40,22 +43,23 @@ require(corrplot)
 ##' @param print_head logical to print to screen the head of data
 ##' @param max_col_head the maximal number of column if the head of data is printed
 ##' @param print_summary logical to print to screen the summary of the data
-##' @return data.frame or tibble
+##' @return data.frame or data.table
 ##' @author Romain Lorrilliere
-my_read_delim <- function(file,sep=c("\t",";",","),dec=c(".",","),as.tibble=TRUE,print_head=TRUE,max_col_head=10,print_summary=FALSE) {
+my_read_delim <- function(file,sep=c("\t",";",","),dec=c(".",","),as_data.frame=TRUE,print_head=TRUE,max_col_head=10,print_summary=FALSE) {
 
+    library(data.table)
     ## file="data/DataRP_SpTron_90.csv";sep=c("\t",";",",");dec=c(".",",") ##
-
     nextSep <- TRUE
     nbSep <- length(sep)
-    i <- 0
 
     cat("\nOpening:",file,"\n    with with decimal '",dec[1],"' and try separators",sep="")
+
+    i <- 0
 
     while(nextSep & i < nbSep) {
         i <- i + 1
         cat("\n '",sep[i],"'")
-        d <- try(read.delim(file,header=TRUE,stringsAsFactor=FALSE,sep=sep[i],dec=dec[1]),silent=TRUE)
+        d <- try(read.delim(file,stringsAsFactor=FALSE,sep=sep[i],dec=dec[1],header=TRUE),silent=TRUE)
 
         if(class(d)[1]=="try-error") {
             nextSep <- TRUE
@@ -100,26 +104,11 @@ my_read_delim <- function(file,sep=c("\t",";",","),dec=c(".",","),as.tibble=TRUE
         cat("Only 1 column founded!!!\n    ---> Check that the separator is in the proposed separators!\n")
     }
 
+    d <- data.table(d)
+    cat("\n  --> Convert encoding from UTF-8\n")
 
-    ##   pbEncoding_columns <- grep("Ã",d)
-    ##
-    ##   cat("oooo",pbEncoding_columns)
-    ##
-    ##  pbEncoding_columns <- grep("A",d)
-    ##
-    ##   cat("iiii",pbEncoding_columns)
-    ##
-    ##
-    ##   if(length(pbEncoding_columns)>0) {
-    ##       cat("\nCharacter do not recognised in ",length(pbEncoding_columns)," columns\n",sep="")
-    cat("  --> Convert encoding from UTF-8\n")
-    cl <- as.vector(lapply(d,class))
-    cl <- which(cl=="character")
-
-    for(j in cl) {
-        cat(colnames(d)[j],"")
-        Encoding(d[,j]) <- "UTF-8"
-    }
+    for (name in colnames(d[,sapply(d, is.character), with=F]))
+        Encoding(d[[name]]) <- "UTF-8"
     ## }
 
 
@@ -136,9 +125,9 @@ my_read_delim <- function(file,sep=c("\t",";",","),dec=c(".",","),as.tibble=TRUE
         print(summary(d))
     }
 
-    if(as.tibble) {
+    if(as_data.frame) {
         library(dplyr)
-        dd <- try(as_tibble(d))
+        dd <- try(as.data.frame(d))
         if(class(dd)[1]=="try-error") cat("The conversion to table format did not work.... \n Output at dataframe format!! \n") else d <- dd
     }
 
@@ -171,23 +160,28 @@ my_summary <- function(d,nbcol=NULL) {
 ##' @param col_sp name of the species name column default NULL
 ##' @param col_value vectors of colmuns that will be update with absence, defaut NULL, if null all columns not present in col_gr and col_sp will be update with absence
 ##' @param dall if there are not all sample in d you can import a table with all sample with the column of col_gr, default NULL
-##' @param as.tibble  logical to get a tibble format, default TRUE
-##' @return update of d (data.frame or tibble) with 0 in the col_value(s) when species are absente
+##' @return update of d (data.frame) with 0 in the col_value(s) when species are absente
 ##' @author
-add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,dall=NULL,as.tibble=TRUE,fig=FALSE,rep="output",id=NULL) {
+add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,dall=NULL,fig=FALSE,rep="output",id=NULL) {
     ##     col_value = c("nb_contacts","temps_enr"); col_sp = "col_sp"; col_gr = c("col_sample","expansion_direct")
 
 
+    library(data.table)
     cat("\nAjout des absences\n")
-    if(class(d)[1]=="data.frame") d <- as_tibble(d)
-
+    if(class(d)[1] %in% c("data.frame")){
+        original_class <- class(d)[1]
+        d <- data.table(d)
+    }
     if(!is.null(col_info_gr)){
-        dgr <- unique(d %>% select(one_of(c(col_gr,col_info_gr))))
-        dgr_seul <- unique(d %>% select(one_of(col_gr)))
+        dgr <- unique(d[,c(col_gr,col_info_gr),with=FALSE])
+             dgr_seul <- unique(d[,..col_gr])
         if(nrow(dgr) != nrow(dgr_seul)) {
-            nbValuePerParticipation <- dgr %>%
+
+            ## number of value for each column per participation
+            nbValuePerParticipation <- dgr %>% as_tibble() %>%
                 group_by(participation,expansion_direct,Tron) %>%
                 summarise_each(funs(length))
+
             tnb <- as.data.frame(nbValuePerParticipation[,4:ncol(nbValuePerParticipation)])
             tnb$allGood <- apply(tnb==1,1,all)
             partinb <- as.data.frame(nbValuePerParticipation[,1:3])
@@ -195,14 +189,14 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
             nbValuePerParticipation <- nbValuePerParticipation[c(col_gr,"allGood")]
 
             cat("ERROR ! l'association des colonnes:\n",colnames(dgr),"\nn'est pas unique\n")
-            cat("pour ",nrow(subset(nbValuePerParticipation,!allGood))," tronçon/point\n ces troncons sont eclues\n",sep="")
+            cat("pour ",nrow(subset(nbValuePerParticipation,!allGood))," tronçon/point\n ces troncons sont exclus\n",sep="")
 
+            d <- data.table(inner_join(d,nbValuePerParticipation))
+            d <- d[allGood == TRUE]
+            d <- d[,allGood:=NULL]
 
-            d <- inner_join(d,nbValuePerParticipation)
-            d <- subset(d,allGood)
-            d <- d %>% select( -one_of("allGood"))
         }
-        d <- d %>% select( -one_of(col_info_gr))
+        d <- d[,!col_info_gr,with=FALSE]
     }
 
     if(is.null(dall)) {
@@ -220,9 +214,8 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
         vec_sp <- unique(pull(d,col_sp))
         dall_sp <-  (expand.grid(dall$id,vec_sp,stringsAsFactors=FALSE))
         colnames(dall_sp) <- c("id",col_sp)
-        dall <- full_join(dall,dall_sp)
-
-        dall <- select(dall,-c("id"))
+        dall <- data.table(full_join(dall,dall_sp))
+        dall <- dall[,id := NULL]
 
     }
 
@@ -293,29 +286,15 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
     }
 
 
-
+    d <- data.table(d)
     if(!is.null(col_info_gr))
         d <- full_join(d,dgr)
 
 
+    d <- setorder(d)
+    if(original_class == "data.frame") d <- data.frame(d)
 
-    if(as.tibble) {
 
-        library(dplyr)
-        dd <- try(as_tibble(d))
-        if(class(dd)[1]=="try-error") {
-            cat("The conversion to table format did not work.... \n Output at dataframe format!! \n")
-            d <- dd
-            d <- d[order(d),]
-        }else {
-            d <- d %>% arrange()
-
-        }
-    } else {
-        d <- dd
-        d <- d[order(d),]
-
-    }
 
 
 
@@ -367,7 +346,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
                        seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000)),
                        list_sample_cat=c("pedestre","routier"),
                        aggregate_site=TRUE,add_absence=TRUE,
-                       list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip"),
+                       list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip","Myospp"),aggregationSp=list(c("Myo","Myospp")),
                        first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt"),
                        only_first_columns=FALSE,excluded_columns="commentaire") {
     library(dplyr)
@@ -375,7 +354,10 @@ prepa_data <- function(id="DataRP_SpTron_90",
     library(lubridate)
     library(ggplot2)
 
-     d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilInfDurPipDirect=1.5;  seuilSupDurPipExp=0.5;  seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip");only_first_columns=FALSE;excluded_columns="commentaire"
+    ## ---------------------------------------------------------------------------------------
+    ## Exemple of parameter to debugging
+    ## d = "data/DataRP_SpTron_90.csv" ;   dpart = "data/p_export.csv";    dsite ="data/sites_localites.txt"; dSR="data/SRmed.csv";    id = NULL;seuilProbPip=c(.75,.8);seuilInfDurPipDirect=1.5;  seuilSupDurPipExp=0.5;  seuilSR=tibble(expansion_direct=c("exp","direct","direct"),col_sp=c(NA,NA,"Nycnoc"),seuilSR_inf=c(441000,96000,44100),seuilSR_sup=c(2000000,384000,384000));    add_absence=TRUE;                       first_columns=c("participation","idobservateur","date_format","year","month","julian","ordre_passage","sample_cat","num_site","Tron","expansion_direct","PropPip_good","DurPip_good","SampleRate_good","strict_selection","flexible_selection","espece","nb_contacts","temps_enr","longitude","latitude","num_site_txt");list_sample_cat=c("pedestre","routier"); col_sample="participation";col_sp="espece";col_IndiceDurPip="IndiceDurPip"; col_IndiceProbPip="IndiceProbPip";col_SampleRate="SampleRate"; col_date="date_debut";col_site="site";col_tron="Tron";col_nbcontact="nb_contacts";col_temps="temps_enr";aggregate_site=TRUE;list_sp= c("Pippip","Plaint","Eptser","Tetvir","Nyclei","Yerray","Phanan","Pleaus","Plaalb","Minsch","Testes","Epheph","Pipkuh","Plasab","Pippyg","Leppun","Rusnit","Sepsep","Myodau","Phofem","Barfis","MyoGT","Mimasp","Phogri","Nycnoc","Phafal","Roeroe","Myonat","Isopyr","Urosp","Ratnor","Barbar","Pipnat","Pleaur","Hypsav","Metbra","Myomys","Lamsp.","Antsp","Eupsp","Cyrscu","Decalb","Plaaff","Rhifer","Tadten","Nyclas","Myoema","Rhasp","Cympud","Tyllil","Plafal","Myobec","Eptnil","Rhihip");aggregationSp=list(c("Myo","Myospp"));only_first_columns=FALSE;excluded_columns="commentaire"
+    ## ---------------------------------------------------------------------------------------
 
     if(is.null(id))
         id <- Sys.Date()
@@ -386,6 +368,27 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
+
+    if(!(is.null(aggregationSp) | is.na(aggregationSp) | aggregationSp=="")) {
+        cat("\nAggregation de",length(aggregationSp),"groupe(s) d'espèces\n")
+        for(l in 1:length(aggregationSp)) {
+            ## l <- 1
+            fromGrSp <- aggregationSp[[l]][1]
+            toSp <- aggregationSp[[l]][2]
+            cat("  - ",fromGrSp,"->",toSp,"\n")
+            d[,col_sp][grep(fromGrSp,d[,col_sp])] <- toSp
+
+        }
+
+        toutCol <- setdiff(colnames(d),col_nbcontact)
+        formulaAggregate <- as.formula(paste(col_nbcontact," ~ ", paste(toutCol,collapse=" + ")))
+        d <- aggregate(formulaAggregate,d,sum)
+
+    }
+
+
+
+
 
     if(!is.null(dpart)) {
         if(class(dpart)[1]=="character")
@@ -447,19 +450,19 @@ prepa_data <- function(id="DataRP_SpTron_90",
     seuilPassage <- tibble(julian=seuilPassage,date_year= format(as.POSIXct(paste(seuilPassage,2000),zone = "CET",format="%j %Y"),format="%d/%m"))
 
     period <- tibble(passage=as.character(1:2),period=c(paste(seuilPassage$date_year[1]," -> ",seuilPassage$date_year[2],sep=""),paste(seuilPassage$date_year[2]," -> ",seuilPassage$date_year[3],sep="")))
-##browser()
     dparti <- unique(d[,c("num_site_txt","date_format","julian","year")])
     dparti <- dparti[order(dparti$num_site_txt,dparti$date_format),]# %>% arrange()
-    dparti$idsite_year <- paste(dparti$idsite,dparti$year,sep="_")
-        library(data.table)
 
-    ddparti<- data.table(dparti)
-    ddparti <- ddparti[,ordre_passage:= 1:.N, by = idsite_year]
-    dparti <- as_tibble(ddparti)
+    dparti$num_site_year <- paste(dparti$num_site_txt,dparti$year,sep="_")
 
-    dnb <- aggregate(ordre_passage ~ idsite_year, dparti,max)
+    library(data.table)
+    dparti<- data.table(dparti)
+    dparti <- dparti[,ordre_passage:= 1:.N, by = num_site_year]
+
+    dnb <- aggregate(ordre_passage ~ num_site_year, dparti,max)
     colnames(dnb)[2] <- "nombre_de_passage"
     dparti <- inner_join(dparti,dnb)
+
 
 
     dparti$passage <- ifelse(dparti$julian>=seuilPassage$julian[1] & dparti$julian<seuilPassage$julian[2],1,ifelse(dparti$julian>=seuilPassage$julian[2] & dparti$julian<seuilPassage$julian[3],2,""))
@@ -493,17 +496,32 @@ prepa_data <- function(id="DataRP_SpTron_90",
     if(!is.null(dsite)){
         if(class(dsite)[1]=="character")
             dsite <- my_read_delim(dsite,print_head=FALSE)
+
         if("id_site" %in% colnames(dsite)) colnames(dsite)[colnames(dsite)=="id_site"] <- "idsite"
         dsite <- dsite[,c("idsite","longitude","latitude")]
         dsite <- aggregate(.~idsite,data=dsite,mean)
+cat("  Ajout des variables Bioclim \n")
         dbio <- Coord_Bioclim(dsite,c("longitude","latitude"),write=FALSE,plot=FALSE,merge_data=TRUE,output_sp = FALSE)
+
         dbio <- data.table(dbio)
-        dbio <- dbio[,setdiff(colnames(dbio), c("longitude","latitude"))]
-         dsite <- full_join(dsite,dbio)
+        dbio <- dbio[,setdiff(colnames(dbio), c("longitude","latitude")),with=FALSE]
+
+        dsite <- full_join(dsite,dbio)
         d <- inner_join(d,dsite)
         cat("\n ##Dimension de la table: \n")
         print(dim(d))
+    } else {
+        cat("  Ajout des variables Bioclim \n")
+        dbio <- Coord_Bioclim(dsite,c("longitude","latitude"),write=FALSE,plot=FALSE,merge_data=TRUE,output_sp = FALSE)
+
+        dbio <- data.table(dbio)
+        dbio <- dbio[,setdiff(colnames(dbio), c("longitude","latitude")),with=FALSE]
+
+        d <- full_join(d,dbio)
+
+
     }
+
 
 
     if(!is.null(dSR)){
@@ -527,7 +545,8 @@ prepa_data <- function(id="DataRP_SpTron_90",
     if(!(is.null(excluded_columns)) & length(intersect(colnames(d),excluded_columns))>0) {
         cat("\nExclusion des colonnes\n")
         cat("  ",excluded_columns,"\n")
-        d <- d %>% select(-one_of(excluded_columns))
+        d <- d[,setdiff(colnames(d), excluded_columns)]
+        cat("   DONE !\n")
     }
 
     if(!is.null(list_sp)) {
@@ -560,7 +579,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
         cat("-----------------------------------------\n\n")
 
         colpart <- setdiff(colnames(d),c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_tron))
-        dall <- unique(d%>% select(c(col_sample,col_tron,"expansion_direct")))
+        dall <- unique(d[,c(col_sample,col_tron,"expansion_direct")])
 
         d <- add_abs(d,col_gr=c(col_sample,"expansion_direct",col_tron),col_sp=col_sp,col_value=col_nbcontact,col_info_gr=colpart,dall=dall)
         cat("\n ##Dimension de la table: \n")
@@ -660,8 +679,8 @@ prepa_data <- function(id="DataRP_SpTron_90",
     }
     if(only_first_columns) colOrder <- first_columns else colOrder <- c(first_columns,setdiff(colnames(d),first_columns))
 
-    d <- d %>% select(colOrder)
-    d <- arrange(d)
+    d <- data.table(d[,colOrder])
+    d <- setorder(d)
 
     filecsv <- paste("data/data_vigieChiro_",id,"_","TronPoint","_",ifelse(is.null(list_sp),"allSp",ifelse(length(list_sp)<6,paste(list_sp,collapse="-"),paste(length(list_sp),"sp",sep=""))),"_",ifelse(add_absence,"withAbs","presence="),".csv",sep="")
     cat("\n   --> [CSV]",filecsv)
@@ -702,19 +721,19 @@ prepa_data <- function(id="DataRP_SpTron_90",
         }
 
 
-        dd <- d[,c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,"strict_selection","flexible_selection")]
+        dd <- d[,c(col_sample,"expansion_direct",col_sp,col_nbcontact,col_temps,col_tron,"strict_selection","flexible_selection"),with=FALSE]
 
         colpart <- c(col_sample,"expansion_direct","strict_selection","flexible_selection",col_sp,setdiff(colnames(d),colnames(dd)))
 
-        ddpart <-  unique(d[,colpart])
+        ddpart <-  unique(d[,colpart,with=FALSE])
         ##ddpart2 <- unique(d[,c("participation","expansion_direct",col_sp,"seuil_ProbPip","PropPip_good","seuilInf_DurPip","DurPip_good","expansion","direct","SampleRate_good")])
 
-        ddpart <- arrange(ddpart)
-        ddpart_sp_ed <- unique(d[,c(col_sample,"expansion_direct",col_sp)])
+        ddpart <- setorder(ddpart)
+        ddpart_sp_ed <- unique(d[,c(col_sample,"expansion_direct",col_sp),with=FALSE])
 
         if(nrow(ddpart_sp_ed) != nrow(ddpart)) {
 
-            nbValuePerParticipation <- ddpart %>%
+            nbValuePerParticipation <- tibble(ddpart) %>%
                 group_by(participation,expansion_direct,espece) %>%
                 summarise_each(funs(length))
             tnb <- as.data.frame(nbValuePerParticipation[,4:ncol(nbValuePerParticipation)])
@@ -728,8 +747,8 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
 
             ddpart <- inner_join(ddpart,nbValuePerParticipation)
-            ddpart <- subset(ddpart,allGood)
-            ddpart <- ddpart %>% select( -one_of("allGood"))
+            ddpart <- data.table(subset(ddpart,allGood))
+            ddpart <- ddpart[,allGood := NULL]
 
         }
 
@@ -743,7 +762,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
         dd_strict_temps <- aggregate(form,subset(d,strict_selection),sum)
 
         form <- as.formula(paste(col_tron," ~  ",col_sample))
-        dd_strict_nbtron <- aggregate(form ,unique(d[d$strict_selection,c(col_sample,col_tron)]),length)
+         dd_strict_nbtron <- aggregate(form ,unique(d[d$strict_selection,c(col_sample,col_tron),with=FALSE,with]),length)
         colnames(dd_strict_nbtron)[2] <- paste("nb_",col_tron,sep="")
 
         dd_strict <- inner_join(dd_strict_contact,dd_strict_temps)
@@ -763,7 +782,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
         dd_flexible_temps <- aggregate(form ,subset(d,flexible_selection),sum)
 
         form <- as.formula(paste(col_tron," ~ ",col_sample))
-        dd_flexible_nbtron <- aggregate(form,unique(d[d$flexible_selection,c(col_sample,col_tron)]),length)
+        dd_flexible_nbtron <- aggregate(form,unique(d[d$flexible_selection,c(col_sample,col_tron),with=FALSE]),length)
         colnames(dd_flexible_nbtron)[2] <- paste("nb_",col_tron,sep="")
 
         dd_flexible <- inner_join(dd_flexible_contact,dd_flexible_temps)
@@ -814,8 +833,9 @@ prepa_data <- function(id="DataRP_SpTron_90",
     }
     if(only_first_columns) colOrder <- first_columns else colOrder <- c(first_columns,setdiff(colnames(d),first_columns))
 
-    d <- d %>% select(colOrder)
-    d <- arrange(d)
+    d <- data.table(d)
+    d <- d[,colOrder,with=FALSE]
+    d <- setorder(d)
 
     filecsv <- paste("data/data_vigieChiro_",id,"_",ifelse(aggregate_site,"site","TronPoint"),"_",ifelse(is.null(list_sp),"allSp",ifelse(length(list_sp)<6,paste(list_sp,collapse="-"),paste(length(list_sp),"sp",sep=""))),"_",ifelse(add_absence,"withAbs","presence="),".csv",sep="")
     cat("\n   --> [CSV]",filecsv)
@@ -828,8 +848,8 @@ prepa_data <- function(id="DataRP_SpTron_90",
 
     if(output) return(d)
 
-}
 
+}
 
 historic_tron <- function(d,id=NULL) {
 
@@ -1001,7 +1021,7 @@ main.glm <- function(id=NULL,
                      tendanceSurFigure=TRUE,tendanceGroupSpe = FALSE,
                      seuilOccu=14,   seuilSignif=0.05,seuilAbond=NA,ecritureStepByStep=TRUE,doBeep=FALSE) {
 
-    ##    id="testGLMTMB";donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_54sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_54sp_withAbs.csv");donneesName=c("90","50");assessIC= TRUE;listSp=NULL;annees=NULL;figure=TRUE;description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites");tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;seuilOccu=14;seuilAbond=NA;ecritureStepByStep=FALSE;   seuilSignif <- 0.05;tabsp="library/SpeciesList.csv"; col_sp="espece";col_date_julien="julian";col_site="site";col_nbcontact="nb_contacts_strict";col_year="year"
+  #     id="testGLMTMB";donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_54sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_54sp_withAbs.csv");donneesName=c("90","50");assessIC= TRUE;listSp=NULL;annees=NULL;figure=TRUE;description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites");tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;seuilOccu=14;seuilAbond=NA;ecritureStepByStep=FALSE;   seuilSignif <- 0.05;tabsp="library/SpeciesList.csv"; col_sp="espece";col_date_julien="julian";col_site="site";col_nbcontact="nb_contacts_strict";col_year="year";doBeep=FALSE
     ##  donneesAll=data;listSp=sp;annees=firstYear:lastYear;figure=TRUE;description=TRUE;tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;
     ##                   seuilOccu=14;seuilAbond=NA;ecritureStepByStep=TRUE
 
@@ -1263,14 +1283,13 @@ main.glm <- function(id=NULL,
 
 
                 if(method == "glmmTMB") {
+                    theta1 <- NA
                     repout <- paste("output/",id,"/",sep="")
-                    md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep),silent=TRUE)
+                    md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
 
                     if(class(md1)[1] != "try-error") {
                         smd1 <- md1[[2]]
-
-                        vif1_mean <- mean(smd1$VIF)
-                        vif1_max <- max(smd1$VIF)
+                        theta1 <- sigma(md1[[1]])
                         smd1 <- smd1[2:nbans,]
 
                         coefan <- smd1[,2]
@@ -1280,7 +1299,6 @@ main.glm <- function(id=NULL,
                         ## erreur standard back transformee
                         erreurannee1 <- c(0,erreuran*exp(coefan))
                         pval <- c(1,smd1[,5])
-                        vif1 <- c(0,smd1[,6])
 
                         md1IC <- confint(md1[[1]])
                         md1IC <- md1IC[2:nbans,]
@@ -1308,8 +1326,7 @@ main.glm <- function(id=NULL,
                                              abondance_relative=round(tab1$val,3),
                                              IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
                                              erreur_standard = round(erreurannee1,4),
-                                             p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),
-                                             vif=vif1,vif_mean = vif1_mean,vif_max = vif1_max)
+                                             p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),theta=theta1)
 
 
                         tabAn1 <- inner_join(tabAn1,dDescri)
@@ -1404,19 +1421,21 @@ main.glm <- function(id=NULL,
                             significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
                             mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
                             mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
-                            valide = catIncert,raison_incertitude = raisonIncert)
+                            valide = catIncert,raison_incertitude = raisonIncert,thetaVarAbond=theta1,thetaTrend=theta2)
 
                     } # END if(class(md2)[1] != "try-error")
                 } # END if(method == "GLM")
 
                 if(method == "glmmTMB") {
                     repout <- paste("output/",id,"/",sep="")
-                    md2 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","latitude","longitude","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep),silent=TRUE)
+                    md2 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
                     if(class(md2)[1] != "try-error") {
                         smd2 <- md2[[2]]
 
                         vif2_mean <- mean(smd2$VIF)
                         vif2_max <- max(smd2$VIF)
+
+                        theta2 <- sigma(md2[[1]])
 
                         smd2 <- smd2[2,]
 
@@ -1456,25 +1475,27 @@ main.glm <- function(id=NULL,
                         ## table complete de resultats
 
                         vecLib <-  NULL
-                        if(any(is.na(c(vif1_mean,vif2_mean)))) {
+                        if(is.na(vif2_mean)) {
                             catIncert <- "Incertain"
-                            if(is.na(vif1_mean)) vecLib <- paste(vecLib,"VIF variation non calculable")
                             if(is.na(vif2_mean)) vecLib <- paste(vecLib,"VIF tendance non calculable")
                         } else {
-                            if(vif1_mean > 2 | vif2_mean > 2 | vif1_max > 5 | vif2_max > 5 |  median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu) {
+                            if( vif2_mean > 2 | vif2_max > 5 | theta1
+                        < .1 | theta1 > 10 | theta2 < .1 | theta2 > 10 |
+                        median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu
+                        | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu ) {
                                 catIncert <- "Incertain"
                                 if(median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu)
                                     vecLib <- c(vecLib,"espece trop rare")
 
                                 if(vif2_mean > 2) vecLib <- c(vecLib,"moyenne vif tendance sup à 2")
-                                if(vif1_mean > 2) vecLib <- c(vecLib,"moyenne vif variation sup à 2")
-                                if(vif2_max > 2) vecLib <- c(vecLib,"max vif tendance sup à 5")
-                                if(vif1_max > 2) vecLib <- c(vecLib,"max vif variation sup à 5")
-
-                            } else {
+                                if(vif2_max > 5) vecLib <- c(vecLib,"max vif tendance sup à 5")
+                                if(theta1 < 0.1) vecLib <- c(vecLib," theta variation inf à 0.1")
+                                if(theta2 < 0.1) vecLib <- c(vecLib," theta tendance inf à 0.1")
+                                if(theta1 > 10) vecLib <- c(vecLib," theta variation sup à 10")
+                                if(theta2 > 10) vecLib <- c(vecLib," theta tendance sup à 10")
+                           } else {
                                 catIncert <-"bon"
                             }
-
                         }
                         raisonIncert <-  paste(vecLib,collapse=" et ")
 
@@ -1482,12 +1503,14 @@ main.glm <- function(id=NULL,
                         tabTrend1 <- data.frame(
                             id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
                             nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
-                            tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,pourcentage_variation=as.vector(pourcent),
+                            tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,
+                            pourcentage_variation=as.vector(pourcent),
                             erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
                             vif = vif2,vif_mean=vif2_mean,vif_max=vif2_max,
                             significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
                             mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
                             mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
+                            theta_variation = theta1,theta_tendance = theta2,
                             valide = catIncert,raison_incertitude = raisonIncert)
                     } # END if(class(md2)[1] != "try-error")
 
@@ -1524,7 +1547,6 @@ main.glm <- function(id=NULL,
             ## table complete pour la figure en panel par ggplot2
             ## table pour graphe en panel par ggplot2
             ## les figures
-                                        #if(sp == "Eptser") browser()
             dggSp <- subset(dgg,espece == sp)
             if(!(is.null(dTrend)))
                 dTrendSp <- subset(dTrend,espece==sp) else dTrendSp <- data.frame(espece=NULL,panel=NULL)
