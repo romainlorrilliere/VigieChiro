@@ -174,7 +174,7 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
     }
     if(!is.null(col_info_gr)){
         dgr <- unique(d[,c(col_gr,col_info_gr),with=FALSE])
-             dgr_seul <- unique(d[,..col_gr])
+        dgr_seul <- unique(d[,..col_gr])
         if(nrow(dgr) != nrow(dgr_seul)) {
 
             ## number of value for each column per participation
@@ -500,7 +500,7 @@ prepa_data <- function(id="DataRP_SpTron_90",
         if("id_site" %in% colnames(dsite)) colnames(dsite)[colnames(dsite)=="id_site"] <- "idsite"
         dsite <- dsite[,c("idsite","longitude","latitude")]
         dsite <- aggregate(.~idsite,data=dsite,mean)
-cat("  Ajout des variables Bioclim \n")
+        cat("  Ajout des variables Bioclim \n")
         dbio <- Coord_Bioclim(dsite,c("longitude","latitude"),write=FALSE,plot=FALSE,merge_data=TRUE,output_sp = FALSE)
 
         dbio <- data.table(dbio)
@@ -605,7 +605,7 @@ cat("  Ajout des variables Bioclim \n")
     cat("\n ##Dimension de la table: \n")
     print(dim(d))
 
-     cat("\n   - IndiceDurPip\n")
+    cat("\n   - IndiceDurPip\n")
     print(seuil_DurPip)
 
     seuil_DurPip$seuilSup_DurPip_fig <- seuil_DurPip$seuilSup_DurPip + 0.5
@@ -762,7 +762,7 @@ cat("  Ajout des variables Bioclim \n")
         dd_strict_temps <- aggregate(form,subset(d,strict_selection),sum)
 
         form <- as.formula(paste(col_tron," ~  ",col_sample))
-         dd_strict_nbtron <- aggregate(form ,unique(d[d$strict_selection,c(col_sample,col_tron),with=FALSE,with]),length)
+        dd_strict_nbtron <- aggregate(form ,unique(d[d$strict_selection,c(col_sample,col_tron),with=FALSE,with]),length)
         colnames(dd_strict_nbtron)[2] <- paste("nb_",col_tron,sep="")
 
         dd_strict <- inner_join(dd_strict_contact,dd_strict_temps)
@@ -1011,23 +1011,22 @@ summary_sp <- function(d,id=NULL,save=c("length","wide"),output="") {
 
 
 
+
+
 main.glm <- function(id=NULL,
-                     donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_54sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_54sp_withAbs.csv"),donneesName=c("90","50"),method="glmmTMB",
+                     donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_55sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_55sp_withAbs.csv"),
+                     donneesName=c("90","50"),method="glmmTMB",
+                     only_direct="Auto",only_exp="Auto",seuilOccu=2,
                      col_sp="espece",
                      col_date_julien="julian",
                      col_site="site",col_nbcontact="nb_contacts",assessIC= TRUE,listSp=NULL,tabsp="library/SpeciesList.csv",
                      first_year=NULL,last_year=NULL,figure=TRUE,
                      description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites"),
                      tendanceSurFigure=TRUE,tendanceGroupSpe = FALSE,
-                     seuilOccu=14,   seuilSignif=0.05,seuilAbond=NA,ecritureStepByStep=TRUE,doBeep=FALSE) {
+                      seuilSignif=0.05,seuilAbond=NA,ecritureStepByStep=TRUE,doBeep=FALSE) {
 
-  #     id="testGLMTMB";donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_54sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_54sp_withAbs.csv");donneesName=c("90","50");assessIC= TRUE;listSp=NULL;annees=NULL;figure=TRUE;description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites");tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;seuilOccu=14;seuilAbond=NA;ecritureStepByStep=FALSE;   seuilSignif <- 0.05;tabsp="library/SpeciesList.csv"; col_sp="espece";col_date_julien="julian";col_site="site";col_nbcontact="nb_contacts_strict";col_year="year";doBeep=FALSE
-    ##  donneesAll=data;listSp=sp;annees=firstYear:lastYear;figure=TRUE;description=TRUE;tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;
-    ##                   seuilOccu=14;seuilAbond=NA;ecritureStepByStep=TRUE
+    ##    id="testGLMTMB_aggregate";donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_55sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_55sp_withAbs.csv");donneesName=c("90","50");assessIC= TRUE;listSp=NULL;annees=NULL;figure=TRUE;description=c("Abondances brutes","Occurrences","Proportion","Nombre de sites");tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;seuilOccu=3;seuilAbond=NA;ecritureStepByStep=FALSE;   seuilSignif <- 0.05;tabsp="library/SpeciesList.csv"; col_sp="espece";col_date_julien="julian";col_site="site";col_nbcontact="nb_contacts_strict";col_year="year";doBeep=FALSE;first_year=NULL;last_year=NULL;only_direct = "Auto";seuilOccu=3
 
-                                        #donneAll = data;listSp=NULL;annees=NULL;echantillon=1;methodeEchantillon=NULL;
-                                        #figure=TRUE;description=TRUE;tendanceSurFigure=TRUE;tendanceGroupSpe = FALSE;
-                                        #seuilOccu=14;seuilAbond=NA;ecritureStepByStep=FALSE
     require(arm)
     require(ggplot2)
     require(data.table)
@@ -1163,7 +1162,7 @@ main.glm <- function(id=NULL,
     for(j in c(6,7,8,5)) {
         name <- colnames(dy)[j]
         cat(name,"->",allowedValue[i],"\n")
-        dgg <- rbind(dgg,data.table(id=id,data=dy$data,espece=dy$espece,nom_espece=dy$nom_espece,year=dy$year,val=dy[,j],LL = NA,UL=NA,catPoint=NA,pval=NA,courbe= dy$expansion_direct,courbe2=paste(name,dy$expansion_direct,sep="_"),panel=allowedValue[i]))
+        dgg <- rbind(dgg,data.table(id=id,data=dy$data,espece=dy$espece,nom_espece=dy$nom_espece,year=dy$year,year_var=0,val=dy[,j],LL = NA,UL=NA,catPoint=NA,pval=NA,courbe= dy$expansion_direct,courbe2=paste(name,dy$expansion_direct,sep="_"),panel=allowedValue[i]))
         i <- i+1
     }
 
@@ -1171,17 +1170,17 @@ main.glm <- function(id=NULL,
     tab1 <- NULL
     dAn <- NULL
     dTrend <- NULL
-    i <- 0
+    using_ExpDirect <- data.table(expand.grid(data=donneesName,espece=listSp),exp=NA,direct=NA)
 
-    for (sp in listSp) {
-###       if(sp=="PHYCOL")
-        i <- i + 1
-        ##       sp <- listSp[i]
-        ##
+    for (i  in 1:length(listSp)) {
+
+
+        sp <- listSp[i]
         nomSp <- tabCons$nom_espece[i]
         cat("\n========================================\n",sep="")
         cat("(",i,"/",nbSp,") ",sp," | ", nomSp,"\n",sep="")
         cat("========================================\n",sep="")
+
 
         flush.console()
         ## d data pour l'espece en court
@@ -1191,6 +1190,45 @@ main.glm <- function(id=NULL,
             cat("         ================\n")
 
             d <- subset(donnees,espece==sp & data == dn)
+
+            ## verification si données expansion seront utilisées
+            if(only_direct == "Auto") {
+                ## median of the expansion occurence
+                med_occ_exp <- median(subset(dDescri,espece == sp & data == dn)$occ_exp,na.rm=TRUE)
+                without_exp <- (med_occ_exp < seuilOccu)
+            } else {
+                without_exp <- sp %in% only_direct
+           }
+
+              using_ExpDirect  <-  using_ExpDirect[espece ==sp & data == dn,exp:= !without_exp]
+            if(without_exp) d <- subset(d,expansion_direct != "exp" & !is.na(nb_contacts_strict))
+
+            if(without_exp) cat("\n !! Number of occurence in expansion (",med_occ_exp,") inf to",seuilOccu,"\n   data expansion will not used !!\n")
+
+
+            ## verification si données direct seront utilisées
+            if(only_exp == "Auto") {
+                ## median of the expansion occurence
+                med_occ_direct <- median(subset(dDescri,espece == sp & data == dn)$occ_direct,na.rm=TRUE)
+                without_direct <- (med_occ_direct < seuilOccu)
+            } else {
+                without_direct <- sp %in% only_exp
+            }
+
+             using_ExpDirect  <-  using_ExpDirect[espece ==sp & data == dn,direct:= !without_direct]
+            if(without_direct) d <- subset(d,expansion_direct != "direct" & !is.na(nb_contacts_strict))
+
+            if(without_direct) cat("\n !! Number of occurence in direct (",med_occ_direct,") inf to",seuilOccu,"\n   data direct will not used !!\n")
+
+
+            if(without_direct & without_exp) {
+                cat(" mediane des occurences direct et expansion inferieure ou égale à ",seuilOccu," \n")
+                cat("   espece trop rare\n")
+                cat(" -> modèle non réalisé\n\n")
+
+            } else {  # ELSE if(without_direct & without_exp)
+
+
 
 
             ## des variable annees
@@ -1202,21 +1240,8 @@ main.glm <- function(id=NULL,
 
 
 
-            ## info sp
-
-#### shortlist espece fait partie des especes indiactrice reconnue ?'echelle national
-### shortlist <- tabsp[sp,"shortlist"]
-            ## indic espèce utilis?our le calcul des indicateurs par groupe de specialisation
-            ##indic <- tabsp[sp,"indicateur"]
             med_occ <- median(subset(dgg, espece == sp & courbe2 == "occ_direct" &  data == dn)$val)
-            if(med_occ <= 2) {
-                cat(" mediane des occurences inferieure ou égale à 2 \n")
-                cat("   espece trop rare\n")
-                cat(" -> modèle non réalisé\n\n")
-
-            } else {  # END if(med_occ <= 2)
-
-                cat("\nModèle variation abondance\n--------------------\n")
+           cat("\nModèle variation abondance\n--------------------\n")
 
                 ## GLM variation d abondance
                 if(method=="GLM") {
@@ -1282,15 +1307,71 @@ main.glm <- function(id=NULL,
 
 
 
-                if(method == "glmmTMB") {
-                    theta1 <- NA
+                if(method == "glmmTMB") {                      theta1 <- NA
                     repout <- paste("output/",id,"/",sep="")
-                    md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
+                    myListEffect <- c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct")
+                    if(without_exp | without_direct) myListEffect <- setdiff(myListEffect,"expansion_direct")
+
+                  theYears <- sort(unique(d$year))
+                    cat("Years:",theYears,"\n")
+
+
+                    md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
 
                     if(class(md1)[1] != "try-error") {
+                        ## test the robustness of the fit
                         smd1 <- md1[[2]]
+                        smd1 <- smd1[grep("year",row.names(smd1)),]
+                        sd_good <- all(smd1[,3]<3)
+                        rerun_model <- !sd_good
+
+                    } else {
+                        rerun_model <- TRUE
+                    }
+
+
+                    while(rerun_model) {
+                        cat("\n\n --------------------------------------------\n!! Problème de convergence  ==> Aggregation d'années:")
+                        spDescri <- subset(dDescri,espece==sp & data==dn)
+                        if(without_direct) {
+                            bad_year <- spDescri$year[(spDescri$occ_exp == min(spDescri$occ_exp,na.rm=TRUE))][1]
+                            spDescri_bad_year <- spDescri[spDescri$year>= bad_year - 1 & spDescri$year <= bad_year + 1 & spDescri$year != bad_year,]
+                            agg_year <- spDescri_bad_year$year[(spDescri_bad_year$occ_exp == min(spDescri_bad_year$occ_exp,na.rm=TRUE))][1]
+                        } else {
+                            bad_year <- spDescri$year[(spDescri$occ_direct == min(spDescri$occ_direct,na.rm=TRUE))][1]
+
+                            spDescri_bad_year <- spDescri[spDescri$year>= bad_year - 1 & spDescri$year <= bad_year + 1 & spDescri$year != bad_year,]
+                            agg_year <- spDescri_bad_year$year[(spDescri_bad_year$occ_direct == min(spDescri_bad_year$occ_direct,na.rm=TRUE))][1]
+                        }
+
+                        newYear_fact <- paste(sort(c(bad_year,agg_year)),collapse="_")
+
+                        d$year[d$year %in% c(bad_year,agg_year)] <- newYear_fact
+
+                         cat(newYear_fact,"\n")
+
+                        theYears <- sort(unique(as.character(d$year)))
+                        cat("Years:",theYears,"\n --------------------------------------------\n\n")
+
+                        md1 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
+
+                        if(class(md1)[1] != "try-error") {
+                            ## test the robustness of the fit
+                            smd1 <- md1[[2]]
+                            smd1 <- smd1[grep("year",row.names(smd1)),]
+                            sd_good <- all(smd1[,3]<3)
+                            rerun_model <- !sd_good
+
+                        } else { # ELSE if(class(md1)[1] != "try-error")
+                            rerun_model <- TRUE
+                        } # END if(class(md1)[1] != "try-error")
+
+                    } # END while(rerun_model)
+
+                    if(!rerun_model) {
+                        ## extraction du résultat du modéle
+
                         theta1 <- sigma(md1[[1]])
-                        smd1 <- smd1[2:nbans,]
 
                         coefan <- smd1[,2]
                         ## coefannee vecteur des variation d'abondance par annee back transformee
@@ -1300,37 +1381,80 @@ main.glm <- function(id=NULL,
                         erreurannee1 <- c(0,erreuran*exp(coefan))
                         pval <- c(1,smd1[,5])
 
+
                         md1IC <- confint(md1[[1]])
-                        md1IC <- md1IC[2:nbans,]
+                        md1IC <- md1IC[2:length(theYears),]
                         ic_inf_sim <-  c(1,exp(md1IC[,1]))
                         ic_sup_sim <-  c(1,exp(md1IC[,2]))
 
 
-                        tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,year=annee,val=coefannee,
-                                           LL=ic_inf_sim,UL=ic_sup_sim,
-                                           catPoint=ifelse(pval<seuilSignif,"significatif",NA),pval,
-                                           courbe="abondance",courbe2=vpan[1],
-                                           panel=vpan[1])
+                        tab1 <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,
+                                          year = NA,year_var = 0,
+                                           val = coefannee,
+                                           LL = ic_inf_sim, UL = ic_sup_sim,
+                                           catPoint = ifelse(pval < seuilSignif,"significatif",NA),pval,
+                                           courbe = "abondance",courbe2 = vpan[1],
+                                           panel = vpan[1])
+
+                        ## reconstruction du l'annnee
+                        if(class(theYears) == "numeric") {
+                            tab1 <- tab1[,year := theYears]
+                        } else {
+                            theYearsMean <- unlist(lapply(strsplit(as.character(theYears),"_"),FUN = function(X) mean(as.numeric(X))))
+                            theYearsVar <- unlist(lapply(strsplit(as.character(theYears),"_"), FUN = function(X) (max(as.numeric(X))- mean(as.numeric(X)))))
+                            tab1 <- tab1[,year := theYearsMean]
+                            tab1 <- tab1[,year_var:= theYearsVar]
+
+
+                        }
+
 
                         ## netoyage des intervalle de confiance superieur très très grande
                         if(assessIC) {
-                            tab1$UL <- ifelse( tab1$val==0,NA,tab1$UL)
+                            tab1$UL <- ifelse(tab1$val == 0,NA,tab1$UL)
                             tab1$UL <-  ifelse(tab1$UL == Inf, NA,tab1$UL)
                             tab1$UL <-  ifelse(tab1$UL > 1.000000e+20, NA,tab1$UL)
                             tab1$UL[1] <- 1
                             tab1$val <-  ifelse(tab1$val > 1.000000e+20,1.000000e+20,tab1$val)
-                        }
+                        } # END if(assessIC)
 
 
-                        tabAn1 <- data.table(id,data=dn,espece=sp, nom_espece= nomSp ,year = tab1$year,
-                                             abondance_relative=round(tab1$val,3),
+                        tabAn1 <- data.table(id,data = dn,espece = sp, nom_espece = nomSp ,
+                                             year=NA,year_num= theYearsMean,
+                                             year_fact = theYears, year_var = theYearsVar,
+                                             abondance_relative = round(tab1$val,3),
                                              IC_inferieur = round(tab1$LL,3), IC_superieur = round(tab1$UL,3),
                                              erreur_standard = round(erreurannee1,4),
                                              p_value = round(tab1$pval,3),significatif = !is.na(tab1$catPoint),theta=theta1)
 
 
+                        if(class(theYears) == "numeric") {
+                            tab1 <- tab1[,year := theYears]
+                        } else {
+
+                            tabAn1num <- tabAn1[year_var==0]
+                            tabAn1num <- tabAn1num[,year := as.numeric(year_fact)]
+                            tabAn1fact <- tabAn1[year_var>0]
+                            new_tabAn1fact <- NULL
+                            for(ii in 1:nrow(tabAn1fact)) {
+                                dtii <- tabAn1fact[1]
+                                new_tabAn1fact_ii <-  data.table(id =dtii$id ,data = dtii$data,
+                                                                 espece = dtii$espece, nom_espece = dtii$nom_espece ,
+                                                                 year=as.numeric(unlist(strsplit(as.character(dtii$year_fact),"_"))),year_num= dtii$year_num,
+                                                                 year_fact = dtii$year_fact, year_var = dtii$year_var,
+                                                                 abondance_relative = dtii$abondance_relative,
+                                                                 IC_inferieur = dtii$IC_inferieur, IC_superieur = dtii$IC_superieur,
+                                                                 erreur_standard = dtii$erreur_standard,
+                                                                 p_value = dtii$p_value,significatif = dtii$significatif,theta=dtii$theta)
+                                new_tabAn1fact <- rbind(new_tabAn1fact,new_tabAn1fact_ii)
+                            }
+
+                            tabAn1 <- rbind(tabAn1num,new_tabAn1fact)
+                           tabAn1 <- tabAn1[order(year)]
+
+                        }
                         tabAn1 <- inner_join(tabAn1,dDescri)
-                    } # END if(class(md1)[1] != "try-error")
+                    } # END  if(!rerun_model)
 
                 } #END  if(method == "glmmTMB")
 
@@ -1370,10 +1494,10 @@ main.glm <- function(id=NULL,
                             md2.sim <- sim(md2)
                             LL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.025),1)),3)
                             UL <- round(exp(tail(apply(coef(md2.sim), 2, quantile,.975),1)),3)
-                        } else {
+                        } else { # ELSE if(assessIC)
                             LL <- NA
                             UL <- NA
-                        }
+                        } # END ELSE if(assessIC)
 
                         ## tab1t table utile pour la realisation des figures
                         tab1t <- data.frame(Est=trend,
@@ -1403,10 +1527,10 @@ main.glm <- function(id=NULL,
                                 }
                             }
                             raisonIncert <-  paste(vecLib,collapse=" et ")
-                        } else {
+                        } else { # ELSE if(assessIC)
                             catIncert <- NA
                             raisonIncert <- NA
-                        }
+                        } # END ELSE if(assessIC)
 
                         ## affectation des tendence EBCC
                         catEBCC <- NA
@@ -1415,304 +1539,320 @@ main.glm <- function(id=NULL,
 
                         tabTrend1 <- data.frame(
                             id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
-                            nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
+                            nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,,direct=!without_direct,expansion=!without_exp,
                             tendance = as.vector(tab1t$Est) ,  IC_inferieur=as.vector(LL) , IC_superieur = as.vector(UL),pourcentage_variation=as.vector(pourcent),
                             erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
                             significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
                             mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
-                            mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
-                            valide = catIncert,raison_incertitude = raisonIncert,thetaVarAbond=theta1,thetaTrend=theta2)
+                            mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,valide = catIncert,raison_incertitude = raisonIncert,thetaVarAbond=theta1,thetaTrend=theta2)
 
-                    } # END if(class(md2)[1] != "try-error")
-                } # END if(method == "GLM")
+                        } # END if(class(md2)[1] != "try-error")
+                    } # END if(method == "GLM")
 
                 if(method == "glmmTMB") {
-                    repout <- paste("output/",id,"/",sep="")
-                    md2 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct"),interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
-                    if(class(md2)[1] != "try-error") {
-                        smd2 <- md2[[2]]
 
-                        vif2_mean <- mean(smd2$VIF)
-                        vif2_max <- max(smd2$VIF)
+                        repout <- paste("output/",id,"/",sep="")
 
-                        theta2 <- sigma(md2[[1]])
+                        myListEffect <- c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct")
+                     if(without_exp | without_direct) myListEffect <- setdiff(myListEffect,"expansion_direct")
+                        md2 <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
+                        if(class(md2)[1] != "try-error") {
+                            smd2 <- md2[[2]]
 
-                        smd2 <- smd2[2,]
+                            vif2_mean <- mean(smd2$VIF)
+                            vif2_max <- max(smd2$VIF)
 
+                            theta2 <- sigma(md2[[1]])
 
-                        coefan <- smd2[,2]
-                        trend <- round(exp(coefan),3)
-                        ## pourcentage de variation sur la periode
-                        pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
-                        pval <- smd2[,5]
-
-                        erreuran <- smd2[,2]
-                        ## erreur standard
-                        erreurannee2 <- erreuran*exp(coefan)
-
-                        vif2 <- smd2[,6]
+                            smd2 <- smd2[2,]
 
 
-                        md2IC <- confint(md2[[1]])
-                        md2IC <- md2IC[2,]
-                        ic_inf_sim <-  round(exp(md2IC[1]),3)
-                        ic_sup_sim <-  round(exp(md2IC[2]),3)
+                            coefan <- smd2[,2]
+                            trend <- round(exp(coefan),3)
+                            ## pourcentage de variation sur la periode
+                            pourcentage <- round((exp(coefan*pasdetemps)-1)*100,2)
+                            pval <- smd2[,5]
+
+                            erreuran <- smd2[,2]
+                            ## erreur standard
+                            erreurannee2 <- erreuran*exp(coefan)
+
+                            vif2 <- smd2[,6]
 
 
-                        ## tab1t table utile pour la realisation des figures
-                        tab1t <- data.frame(Est=trend,
-                                            LL=ic_inf_sim, UL=ic_sup_sim,
-                                            pourcent=pourcentage,signif=pval<seuilSignif,pval,
-                                            vif=vif2,vif_mean=vif2_mean,vif_max=vif2_max)
+                            md2IC <- confint(md2[[1]])
+                            md2IC <- md2IC[2,]
+                            ic_inf_sim <-  round(exp(md2IC[1]),3)
+                            ic_sup_sim <-  round(exp(md2IC[2]),3)
 
-                        trendsignif <- tab1t$signif
-                        pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
-                        ## surdispersion
 
-                        ## affectation des tendence EBCC
-                        catEBCC <- NA
-                        if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
-                        ## table complete de resultats
+                            ## tab1t table utile pour la realisation des figures
+                            tab1t <- data.frame(Est=trend,
+                                                LL=ic_inf_sim, UL=ic_sup_sim,
+                                                pourcent=pourcentage,signif=pval<seuilSignif,pval,
+                                                vif=vif2,vif_mean=vif2_mean,vif_max=vif2_max)
 
-                        vecLib <-  NULL
-                        if(is.na(vif2_mean)) {
-                            catIncert <- "Incertain"
-                            if(is.na(vif2_mean)) vecLib <- paste(vecLib,"VIF tendance non calculable")
-                        } else {
-                            if( vif2_mean > 2 | vif2_max > 5 | theta1
-                        < .1 | theta1 > 10 | theta2 < .1 | theta2 > 10 |
-                        median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu
-                        | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu ) {
+                            trendsignif <- tab1t$signif
+                            pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
+                            ## surdispersion
+
+                            ## affectation des tendence EBCC
+                            catEBCC <- NA
+                            if(assessIC)  catEBCC <- affectCatEBCC(trend = tab1t$Est,pVal = tab1t$pval,ICinf=as.vector(tab1t$LL),ICsup=as.vector(tab1t$UL)) else catEBCC <- NA
+                            ## table complete de resultats
+
+                            vecLib <-  NULL
+                            if(is.na(vif2_mean)) {
                                 catIncert <- "Incertain"
-                                if(median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu)
-                                    vecLib <- c(vecLib,"espece trop rare")
+                                if(is.na(vif2_mean)) vecLib <- paste(vecLib,"VIF tendance non calculable")
+                            } else { # ELSE  if(is.na(vif2_mean))
+                                if( vif2_mean > 2 | vif2_max > 5 | theta1
+                                   < .1 | theta1 > 10 | theta2 < .1 | theta2 > 10 |
+                                     median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu
+                                   | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu ) {
+                                    catIncert <- "Incertain"
+                                    if(median(tabAn1$occ_direct,na.rm=TRUE)<seuilOccu | median(tabAn1$occ_exp,na.rm=TRUE)<seuilOccu)
+                                        vecLib <- c(vecLib,"espece trop rare")
 
-                                if(vif2_mean > 2) vecLib <- c(vecLib,"moyenne vif tendance sup à 2")
-                                if(vif2_max > 5) vecLib <- c(vecLib,"max vif tendance sup à 5")
-                                if(theta1 < 0.1) vecLib <- c(vecLib," theta variation inf à 0.1")
-                                if(theta2 < 0.1) vecLib <- c(vecLib," theta tendance inf à 0.1")
-                                if(theta1 > 10) vecLib <- c(vecLib," theta variation sup à 10")
-                                if(theta2 > 10) vecLib <- c(vecLib," theta tendance sup à 10")
-                           } else {
-                                catIncert <-"bon"
-                            }
-                        }
-                        raisonIncert <-  paste(vecLib,collapse=" et ")
+                                    if(vif2_mean > 2) vecLib <- c(vecLib,"moyenne vif tendance sup à 2")
+                                    if(vif2_max > 5) vecLib <- c(vecLib,"max vif tendance sup à 5")
+                                    if(theta1 < 0.1) vecLib <- c(vecLib," theta variation inf à 0.1")
+                                    if(theta2 < 0.1) vecLib <- c(vecLib," theta tendance inf à 0.1")
+                                    if(theta1 > 10) vecLib <- c(vecLib," theta variation sup à 10")
+                                    if(theta2 > 10) vecLib <- c(vecLib," theta tendance sup à 10")
+                                } else {
+                                    catIncert <-"bon"
+                                }
+                            } # END ELSE  if(is.na(vif2_mean))
+                            raisonIncert <-  paste(vecLib,collapse=" et ")
 
 
-                        tabTrend1 <- data.frame(
-                            id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
-                            nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,
-                            tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,
-                            pourcentage_variation=as.vector(pourcent),
-                            erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
-                            vif = vif2,vif_mean=vif2_mean,vif_max=vif2_max,
-                            significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
-                            mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
-                            mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
-                            theta_variation = theta1,theta_tendance = theta2,
-                            valide = catIncert,raison_incertitude = raisonIncert)
-                    } # END if(class(md2)[1] != "try-error")
+                            tabTrend1 <- data.frame(
+                                id,data=dn,espece=sp,nom_espece = nomSp ,indicateur = "",
+                                nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,direct=!without_direct,expansion=!without_exp,
+                                tendance = as.vector(tab1t$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,
+                                pourcentage_variation=as.vector(pourcent),
+                                erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
+                                vif = vif2,vif_mean=vif2_mean,vif_max=vif2_max,
+                                significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
+                                mediane_occurrence_direct=median(tabAn1$occ_direct,na.rm=TRUE) ,
+                                mediane_occurrence_exp=median(tabAn1$occ_exp,na.rm=TRUE) ,
+                                theta_variation = theta1,theta_tendance = theta2,
+                                valide = catIncert,raison_incertitude = raisonIncert)
+                        } # END if(class(md2)[1] != "try-error")
 
                 } # END if(method == "glmmTMB")
-            } # END ELSE if(med_occ <= 2)
-            dTrend <- rbind(dTrend,tabTrend1)
+                     dTrend <- rbind(dTrend,tabTrend1)
 
-        } # END for(dn in donneesName)
+                } # END ELSE if(med_occ <= 2)
 
-        ##   if(assessIC)  listGLMsp <- list(list(glm1,glm1.sim,md2,md2.sim)) else  listGLMsp <- list(list(glm1,md2))
-        ##   names(listGLMsp)[[1]] <-sp
-        ##   fileSaveGLMsp <- paste(fileSaveGLMs,"_",sp,".Rdata",sep="")
+            } # END for(dn in donneesName)
 
-        ##   save(listGLMsp,file=fileSaveGLMsp)
-        ##   cat("--->",fileSaveGLMsp,"\n")
-        ##   flush.console()
+            ##   if(assessIC)  listGLMsp <- list(list(glm1,glm1.sim,md2,md2.sim)) else  listGLMsp <- list(list(glm1,md2))
+            ##   names(listGLMsp)[[1]] <-sp
+            ##   fileSaveGLMsp <- paste(fileSaveGLMs,"_",sp,".Rdata",sep="")
 
-        if(ecritureStepByStep) {
-            write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
-            cat("--->",filesavedgg,"\n")
-            write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
-            cat("--->",filesaveAn,"\n")
-            write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
-            cat("--->",filesaveTrend,"\n")
+            ##   save(listGLMsp,file=fileSaveGLMsp)
+            ##   cat("--->",fileSaveGLMsp,"\n")
+            ##   flush.console()
 
-            flush.console()
+            if(ecritureStepByStep) {
+                write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
+                cat("--->",filesavedgg,"\n")
+                write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
+                cat("--->",filesaveAn,"\n")
+                write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
+                cat("--->",filesaveTrend,"\n")
 
-        }
+                flush.console()
+
+            }
 
 
 
-        ## les figures
-        if(figure) {
-            ## table complete pour la figure en panel par ggplot2
-            ## table pour graphe en panel par ggplot2
             ## les figures
-            dggSp <- subset(dgg,espece == sp)
-            if(!(is.null(dTrend)))
-                dTrendSp <- subset(dTrend,espece==sp) else dTrendSp <- data.frame(espece=NULL,panel=NULL)
-            theCatIncert <- "incertain"
-            if(nrow(dTrendSp)>0)
-                theCatIncert <- ifelse(any(dTrendSp$valide == "bon"),"bon","incertain")
-            ggplot.espece(dgg=dggSp,dTrend=dTrendSp,id=id,sp=sp,valide=theCatIncert,hline.data="auto",tendanceSurFigure=tendanceSurFigure,seuilOccu=14,vpan = vpan)
+            if(figure) {
+                ## table complete pour la figure en panel par ggplot2
+                ## table pour graphe en panel par ggplot2
+                ## les figures
+                dggSp <- subset(dgg,espece == sp)
 
-        } # END  if(figure)
+                using <- melt(using_ExpDirect[espece == sp],id.vars=c("data","espece"),variable.name="courbe",value.name="used",variable.factor=FALSE)
+                ## si aucun model alors on garde toutes les courbes de description
+                if(any(using$used)) {
+                   using <- using[,espece := as.character(espece)]
+                   using <- using[,data:= as.character(data)]
+
+                   dggSp <- data.table(full_join(dggSp,using))
+                   dggSp <- dggSp[is.na(used),used := TRUE]
+                   dggSp <- dggSp[used==TRUE]
+                }
+                if(!(is.null(dTrend)))
+                    dTrendSp <- subset(dTrend,espece==sp) else dTrendSp <- data.frame(espece=NULL,panel=NULL)
+                theCatIncert <- "incertain"
+                if(nrow(dTrendSp)>0)
+                    theCatIncert <- ifelse(any(dTrendSp$valide == "bon"),"bon","incertain")
+                ggplot.espece(dgg=dggSp,dTrend=dTrendSp,id=id,sp=sp,valide=theCatIncert,hline.data="auto",tendanceSurFigure=tendanceSurFigure,seuilOccu=seuilOccu,vpan = vpan)
+
+            } # END  if(figure)
 
 
 
 
-    } # END for(sp in listSp)
+        } # END for(sp in listSp)
 
-    write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
-    cat("--->",filesavedgg,"\n")
-    write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
-    cat("--->",filesaveAn,"\n")
-    write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
-    cat("--->",filesaveTrend,"\n")
+        write.csv2(dgg,filesavedgg,row.names=FALSE,quote=FALSE)
+        cat("--->",filesavedgg,"\n")
+        write.csv2(dAn,filesaveAn,row.names=FALSE,quote=FALSE)
+        cat("--->",filesaveAn,"\n")
+        write.csv2(dTrend,filesaveTrend,row.names=FALSE,quote=FALSE)
+        cat("--->",filesaveTrend,"\n")
 
 
-    flush.console()
+        flush.console()
 
-    end <- Sys.time() ## heure de fin
-    diff <- end-start
-    diff <- paste(round(diff,1),units(diff))
+        end <- Sys.time() ## heure de fin
+        diff <- end-start
+        diff <- paste(round(diff,1),units(diff))
 
-    cat("\n\n=====================================================\n")
-    cat("\n  ", format(end, "%d-%m-%Y %HH%M")," -> ",diff,"\n")
-    cat("\n=====================================================\n\n")
-}
+        cat("\n\n=====================================================\n")
+        cat("\n  ", format(end, "%d-%m-%Y %HH%M")," -> ",diff,"\n")
+        cat("\n=====================================================\n\n")
+    }
 
 
 
                                         # la figure realiser par ggplot
 
-ggplot.espece <- function(dgg,dTrend,id,serie=NULL,sp,valide,hline.data="auto",nomSp=NULL,
-                          tendanceSurFigure=TRUE,seuilOccu=14, vpan = c("Variation abondance","Abondances brutes","Proportion","Occurrences","Nombre de sites")) {
+    ggplot.espece <- function(dgg,dTrend,id,serie=NULL,sp,valide,hline.data="auto",nomSp=NULL,
+                              tendanceSurFigure=TRUE,seuilOccu=14, vpan = c("Variation abondance","Abondances brutes","Proportion","Occurrences","Nombre de sites")) {
 
                                         #      ddgg=dgg;dgg=subset(dgg,espece==sp); ddTrend=dTrend;dTrend=subset(dTrend,espece==sp);hline.data="auto";serie=NULL;nomSp=NULL;description=TRUE;valide=catIncert; tendanceSurFigure=TRUE;seuilOccu=14;vpan = c("Variation abondance","Abondances brutes","Proportion","Occurrences","Nombre de sites")
-    require(ggplot2)
-    library(scales)
-    figname<- paste("Output/",id,"/",ifelse(valide=="Incertain","Incertain/",""),
-                    sp,"_",id,serie, ".png",
-                    sep = "")
-    ## coordonnée des ligne horizontal de seuil pour les abondances et les occurences
+        require(ggplot2)
+        library(scales)
+        figname<- paste("Output/",id,"/",ifelse(valide=="Incertain","Incertain/",""),
+                        sp,"_",id,serie, ".png",
+                        sep = "")
+        ## coordonnée des ligne horizontal de seuil pour les abondances et les occurences
 
-    varAbond <- TRUE
-    vpanInData <- unique(dgg$panel)
-    notAllowedVpan <- setdiff(vpan,vpanInData)
-    if("Variation abondance" %in% notAllowedVpan) {
-        dggvar <- dgg[1,]
-        dggvar$val <- NA
-        dggvar$courbe <- "abondance"
-        dggvar$courbe2 <- "abondance"
-        dggvar$panel <- "Variation abondance"
-        dgg <- rbind(dggvar,dgg)
+        varAbond <- TRUE
         vpanInData <- unique(dgg$panel)
         notAllowedVpan <- setdiff(vpan,vpanInData)
-        varAbond <- FALSE
+        if("Variation abondance" %in% notAllowedVpan) {
+            dggvar <- dgg[1,]
+            dggvar$val <- NA
+            dggvar$courbe <- "abondance"
+            dggvar$courbe2 <- "abondance"
+            dggvar$panel <- "Variation abondance"
+            dgg <- rbind(dggvar,dgg)
+            vpanInData <- unique(dgg$panel)
+            notAllowedVpan <- setdiff(vpan,vpanInData)
+            varAbond <- FALSE
+
+        }
+
+
+        if(length(notAllowedVpan)>0) {
+            cat("WARNINGS vpan not in panel column:", paste(notAllowedVpan,collapse=", "),"\n")
+            cat("vpan item excluded\n")
+            vpan <- intersect(vpan,vpanInData)
+        }
+
+        description <- length(vpan)>1
+        dgg <- subset(dgg,panel %in% vpan)
+        dgg$panel <- factor(dgg$panel, levels=vpan)
+
+        if(hline.data == "auto") {
+
+            hline.ref  <- data.table(z = c(1), pattern = "VAR",panel=vpan[grep("VAR",toupper(vpan))],type=c("base"))
+            hline.ref <- rbind(hline.ref,data.table(z = c(0,seuilOccu), pattern = rep("OCCU",2),panel=vpan[grep("OCCU",toupper(vpan))],type=c("base","seuil")))
+            hline.ref <- rbind(hline.ref,data.table(z = c(0,seuilOccu), pattern = rep("MBRE",2),panel=vpan[grep("MBRE",toupper(vpan))],type=c("base","seuil")))
+            ##    hline.ref <- rbind(hline.ref,data.table(z = NA,pattern = "PROP",panel=vpan[grep("PROP",toupper(vpan))]))
+            hline.ref$couleur <- hline.ref$panel
+            ##    hline.ref$type <- hline.ref$panel
+
+
+
+            hline.data <- data.table(panel = vpan)
+            hline.data <- inner_join(hline.data,hline.ref)
+            hline.data$panel <- factor(hline.data$panel, levels=vpan)
+
+
+        }
+
+        titre <- paste(dgg$nom_espece[1]," (",dgg$espece[1],")\n",min(dgg$year) ," - ",max(dgg$year),sep="")
+        if(nrow(dTrend)>0) titre <- paste(titre,": ",paste(unique(as.character(dTrend$categorie_tendance_EBCC)),collapse=", "),sep="")
+
+        ## texte de la tendance
+        tab1 <- subset(dgg,panel =="Variation abondance")
+        pasdetemps <- max(dgg$year) - min(dgg$year) + 1
+        if(nrow(dTrend)>0) {
+            txtPente <- paste(dTrend$tendance,
+                              ifelse(dTrend$significatif," *",""),"  [",dTrend$IC_inf," , ",dTrend$IC_sup,"]",
+                              ifelse(dTrend$significatif,paste("\n",ifelse(dTrend$pourcentage_variation>0,"+ ","- "),
+                                                               abs(dTrend$pourcentage_variation)," % en ",pasdetemps," ans",sep=""),""),sep="")
+
+
+
+            ## table du texte de la tendence
+
+            tabTextPent <- data.table(data=dTrend$data,
+                                      x=ifelse(dTrend$pourcentage_variation>0,-Inf,Inf),
+                                      text_hjust= ifelse(dTrend$pourcentage_variation>0,-0.1,1.1),
+                                      txt=txtPente,
+                                      courbe=c(vpan[1]),panel=c(vpan[1]))
+            tabTextPent$panel <- factor(tabTextPent$panel, levels=vpan)
+            if(!tendanceSurFigure) tabTextPent$txt <- ""
+        }
+
+
+        ## les couleurs
+        vecColPoint <- c("#ffffff","#eeb40f","#ee0f59")
+        names(vecColPoint) <- c("significatif","infSeuil","0")
+        vecColCourbe <- c("#3c47e0","#fc8d62","#66c2a5")
+        names(vecColCourbe) <- c("abondance","exp","direct")
+        vecColHline <- c("#ffffff","#e76060")
+        names(vecColHline) <- c("Variation abondance","seuil")
+
+        col <- c(vecColPoint,vecColCourbe,vecColHline)
+        names(col) <- c(names(vecColPoint),names(vecColCourbe),names(vecColHline))
+
+        vecLineType <- c("base"="solid","seuil"="dashed")
+
+        ## si description graphique en 3 panels
+        if(!description) {
+            dgg <- subset(dgg,panel==hline.data$panel[1])
+            hline.data <- hline.data[1,]
+        }
+
+        p <- ggplot(data = dgg, mapping = aes(x = year, y = val,colour=courbe,fill=courbe))
+        p <- p + facet_grid(panel ~ data,scale="free") +
+            theme(panel.grid.minor=element_blank(),
+                  panel.grid.major.y=element_blank())  +
+            ylab("") + xlab("Année")+ ggtitle(titre) +
+            scale_colour_manual(values=col, name = "" ,
+                                breaks = names(col))+
+            scale_fill_manual(values=col, name = "" ,
+                              breaks = names(col),guide=FALSE)+
+            scale_linetype_manual(values=vecLineType, name = "" ,
+                                  breaks = names(vecLineType),guide=FALSE)+
+            scale_alpha_continuous(guide = FALSE) +
+            scale_x_continuous(breaks=pretty_breaks())
+
+        p <- p + geom_hline(data =hline.data,mapping = aes(yintercept=z,linetype=type ),colour = "white",alpha=1,size=1)
+
+        if(varAbond)  p <- p + geom_ribbon(aes(ymin=LL,ymax=UL),colour=NA,alpha=.2)
+        if(varAbond)  p <- p + geom_pointrange(aes(y=val,ymin=LL,ymax=UL),fill=col[vpan[1]],alpha=.5)
+        p <- p + geom_line(size = 1.2,alpha=.8)
+        p <- p + geom_point(size = 2)
+        p <- p + geom_point(aes(colour=catPoint,alpha=ifelse(!is.na(catPoint),1,0)),size = 1.2)
+
+
+        if(nrow(dTrend) > 0) p <- p + geom_text(data=tabTextPent, mapping=aes(x=x,y=Inf,label=txt,hjust=text_hjust),vjust=1.1,colour="black",parse=FALSE,fontface=2, size=3)
+
+        cat("  [PNG]",figname,"\n")
+        if(description)  ggsave(figname, p,width=10,height=12)  else ggsave(figname, p,width=10,height=5.5)
 
     }
-
-
-    if(length(notAllowedVpan)>0) {
-        cat("WARNINGS vpan not in panel column:", paste(notAllowedVpan,collapse=", "),"\n")
-        cat("vpan item excluded\n")
-        vpan <- intersect(vpan,vpanInData)
-    }
-
-    description <- length(vpan)>1
-    dgg <- subset(dgg,panel %in% vpan)
-    dgg$panel <- factor(dgg$panel, levels=vpan)
-
-    if(hline.data == "auto") {
-
-        hline.ref  <- data.table(z = c(1), pattern = "VAR",panel=vpan[grep("VAR",toupper(vpan))],type=c("base"))
-        hline.ref <- rbind(hline.ref,data.table(z = c(0,seuilOccu), pattern = rep("OCCU",2),panel=vpan[grep("OCCU",toupper(vpan))],type=c("base","seuil")))
-        hline.ref <- rbind(hline.ref,data.table(z = c(0,seuilOccu), pattern = rep("MBRE",2),panel=vpan[grep("MBRE",toupper(vpan))],type=c("base","seuil")))
-        ##    hline.ref <- rbind(hline.ref,data.table(z = NA,pattern = "PROP",panel=vpan[grep("PROP",toupper(vpan))]))
-        hline.ref$couleur <- hline.ref$panel
-        ##    hline.ref$type <- hline.ref$panel
-
-
-
-        hline.data <- data.table(panel = vpan)
-        hline.data <- inner_join(hline.data,hline.ref)
-        hline.data$panel <- factor(hline.data$panel, levels=vpan)
-
-
-    }
-
-    titre <- paste(dgg$nom_espece[1]," (",dgg$espece[1],")\n",min(dgg$year) ," - ",max(dgg$year),sep="")
-    if(nrow(dTrend)>0) titre <- paste(titre,": ",paste(unique(as.character(dTrend$categorie_tendance_EBCC)),collapse=", "),sep="")
-
-    ## texte de la tendance
-    tab1 <- subset(dgg,panel =="Variation abondance")
-    pasdetemps <- max(dgg$year) - min(dgg$year) + 1
-    if(nrow(dTrend)>0) {
-        txtPente <- paste(dTrend$tendance,
-                          ifelse(dTrend$significatif," *",""),"  [",dTrend$IC_inf," , ",dTrend$IC_sup,"]",
-                          ifelse(dTrend$significatif,paste("\n",ifelse(dTrend$pourcentage_variation>0,"+ ","- "),
-                                                           abs(dTrend$pourcentage_variation)," % en ",pasdetemps," ans",sep=""),""),sep="")
-
-
-
-        ## table du texte de la tendence
-
-        tabTextPent <- data.table(data=dTrend$data,
-                                  x=ifelse(dTrend$pourcentage_variation>0,-Inf,Inf),
-                                  text_hjust= ifelse(dTrend$pourcentage_variation>0,-0.1,1.1),
-                                  txt=txtPente,
-                                  courbe=c(vpan[1]),panel=c(vpan[1]))
-        tabTextPent$panel <- factor(tabTextPent$panel, levels=vpan)
-        if(!tendanceSurFigure) tabTextPent$txt <- ""
-    }
-
-
-    ## les couleurs
-    vecColPoint <- c("#ffffff","#eeb40f","#ee0f59")
-    names(vecColPoint) <- c("significatif","infSeuil","0")
-    vecColCourbe <- c("#3c47e0","#fc8d62","#66c2a5")
-    names(vecColCourbe) <- c("abondance","exp","direct")
-    vecColHline <- c("#ffffff","#e76060")
-    names(vecColHline) <- c("Variation abondance","seuil")
-
-    col <- c(vecColPoint,vecColCourbe,vecColHline)
-    names(col) <- c(names(vecColPoint),names(vecColCourbe),names(vecColHline))
-
-    vecLineType <- c("base"="solid","seuil"="dashed")
-
-    ## si description graphique en 3 panels
-    if(!description) {
-        dgg <- subset(dgg,panel==hline.data$panel[1])
-        hline.data <- hline.data[1,]
-    }
-
-    p <- ggplot(data = dgg, mapping = aes(x = year, y = val,colour=courbe,fill=courbe))
-    p <- p + facet_grid(panel ~ data,scale="free") +
-        theme(panel.grid.minor=element_blank(),
-              panel.grid.major.y=element_blank())  +
-        ylab("") + xlab("Année")+ ggtitle(titre) +
-        scale_colour_manual(values=col, name = "" ,
-                            breaks = names(col))+
-        scale_fill_manual(values=col, name = "" ,
-                          breaks = names(col),guide=FALSE)+
-        scale_linetype_manual(values=vecLineType, name = "" ,
-                              breaks = names(vecLineType),guide=FALSE)+
-        scale_alpha_continuous(guide = FALSE) +
-        scale_x_continuous(breaks=pretty_breaks())
-
-    p <- p + geom_hline(data =hline.data,mapping = aes(yintercept=z,linetype=type ),colour = "white",alpha=1,size=1)
-
-    if(varAbond)  p <- p + geom_ribbon(aes(ymin=LL,ymax=UL),colour=NA,alpha=.2)
-    if(varAbond)  p <- p + geom_pointrange(aes(y=val,ymin=LL,ymax=UL),fill=col[vpan[1]],alpha=.5)
-    p <- p + geom_line(size = 1.2,alpha=.8)
-    p <- p + geom_point(size = 2)
-    p <- p + geom_point(aes(colour=catPoint,alpha=ifelse(!is.na(catPoint),1,0)),size = 1.2)
-
-
-    if(nrow(dTrend) > 0) p <- p + geom_text(data=tabTextPent, mapping=aes(x=x,y=Inf,label=txt,hjust=text_hjust),vjust=1.1,colour="black",parse=FALSE,fontface=2, size=3)
-
-    if(description)  ggsave(figname, p,width=10,height=12)  else ggsave(figname, p,width=10,height=5.5)
-
-}
 
 
