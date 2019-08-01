@@ -45,17 +45,17 @@ des troncons sont ils moins suivie que d'autre au court des ans ?
  - [X] ajout titre au figures
  - [X] sortie stable
 *** TODO weight sur modèle mixte                             :methodo:biblio:
-** TODO [#A] trend_sp()[5/5]                                       :fonction:
+** TODO [#A] trend_sp()[5/6]                                       :fonction:
  - [X] variable bioclim 1 et 12
  - [X] VIF modèle année continu
  - [X] pas de VIF pour année en fact
  - [X] dispersion il faut du coup avec la négative binomial regarder aussi la résidual  dev sur ddl résidual
  - [X] thêta n est pas extravagant il devrait idéalement être de qq unité mais si possible pas un truc du style 0.000001 ou 10 ^6
- - [ ] grouper années faible
-    1. [ ] si modele ne tourne pas
-       1. [ ] condition valeur pas de SD NA et de même ordre grandeur
-       2. [ ] SD doit être inf à 2 ou 3
-    2. [ ] aggreger avec proche la plus faible
+ - [-] grouper années faible
+   1. [X] si modele ne tourne pas
+      1. [X] condition valeur pas de SD NA et de même ordre grandeur
+      2. [X] SD doit être inf à 2 ou 3
+   2. [ ] aggreger avec proche la plus faible
 
 * TODO [#A] Trend groupes [/]                                       :Analyse:
 
