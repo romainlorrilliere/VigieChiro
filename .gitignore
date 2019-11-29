@@ -32,7 +32,7 @@ sig/
 *.org
 *.org~
 
-my*.r
+my*
 
 isd-history.csv
 
