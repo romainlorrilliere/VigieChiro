@@ -32,6 +32,8 @@ sig/
 *.org
 *.org~
 
+my*.r
+
 isd-history.csv
 
 f_coord_ROUTE.R
