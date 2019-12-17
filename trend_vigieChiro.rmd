@@ -1,0 +1,153 @@
+
+---
+title: "Estimation des tendances et des variation d'abondance des populations de chauve-souris à partir des données issues de Vigie-Chiro"
+author: "Romain Lorrilliere & Yves Bas (CESCo, MNHN)"
+date: "2019-12-17"
+output: "html_document"
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE,message=FALSE, eval=FALSE)
+
+```
+
+
+
+
+# Lites de packages
+
+
+```{r}
+library(data.table)
+library(lubridate)
+library(ggpubr)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(lubridate)
+library(ggplot2)
+
+```
+
+
+
+# Source du script
+
+```{r}
+source("script_trend.r")
+``` 
+
+
+
+
+# Echantillonnage
+
+## seuil 50
+
+### Preparation des données pour l'historic de l'échantillonnage 
+
+```{r, eval=FALSE}
+
+dt50 <- prepa_data(id= "DataRP_SpTron_50",d="data/DataRP_SpTron_50.csv",aggregate_site=FALSE,add_abs=TRUE)
+ddt50 <- dt50 %>% select(c("num_site_txt","Tron","sample_cat","date_format","year","julian","espece","expansion_direct","nb_contacts"))
+ddt50 <- ddt50 %>% arrange(num_site_txt,date_format,espece,expansion_direct)
+
+``` 
+
+### Historique
+
+```{r eval=FALSE}
+
+historic_tron(ddt50,id="DataRP_SpTron_50")
+d50 <- prepa_data(id="DataRP_SpTron_50",d="data/DataRP_SpTron_50.csv",aggregate_site=TRUE,add_abs=TRUE)
+## summary_sp(d50,id="DataRP_SpTron_50")
+
+```
+
+
+## seuil 90
+
+### Preparation des données pour l'historic de l'échantillonnage 
+
+```{r, eval=FALSE}
+
+dt90 <- prepa_data(id= "DataRP_SpTron_90",d="data/DataRP_SpTron_90.csv",aggregate_site=FALSE,add_abs=TRUE)
+ddt90 <- dt90 %>% select(c("num_site_txt","Tron","sample_cat","date_format","year","julian","espece","expansion_direct","nb_contacts"))
+ddt90 <- ddt90 %>% arrange(num_site_txt,date_format,espece,expansion_direct)
+
+``` 
+
+### Historique
+
+```{r eval=FALSE}
+
+historic_tron(ddt90,id="DataRP_SpTron_90")
+
+```
+
+
+
+
+# Tendance
+
+## Preparation des données pour les tendances
+
+### seuil 50
+
+```{r, eval=FALSE}
+
+d50 <- prepa_data(id="DataRP_SpTron_50",d="data/DataRP_SpTron_50.csv",aggregate_site=TRUE,add_abs=TRUE)
+
+```
+
+```{r, eval = FALSE}
+
+summary_sp(d50,id="DataRP_SpTron_50")
+
+```
+
+
+### seuil 90
+
+```{r, eval=FALSE}
+
+d90 <- prepa_data(id="DataRP_SpTron_90",d="data/DataRP_SpTron_90.csv",aggregate_site=TRUE,add_abs=TRUE)
+
+```
+
+```{r, eval = FALSE}
+
+summary_sp(d90,id="DataRP_SpTron_90")
+
+```
+
+### Calcul des tendances 
+
+Par defaut on calcul les tendances sur toutes les espèces __listSp =
+_NULL_ __ et sur les 2 jeux de données seuil50 et seuil90 creer
+précédement
+__donneesAll=list("_data/data_vigieChiro_DataRP_SpTron_90_site_55sp_withAbs.csv_","_data/data_vigieChiro_DataRP_SpTron_50_site_55sp_withAbs.csv_")__
+et __donneesName=c("90","50")__. 
+
+```{r, eval = FALSE}
+
+main.glm()
+
+```
+
+
+
+Si on souhaite ne faire tourner le modèle que sur quelques espèces: 
+
+```{r, eval = FALSE}
+
+main.glm(listSp=c("Hypsav","Pippip"))
+
+``` 
+
+
+
+
