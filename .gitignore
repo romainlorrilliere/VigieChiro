@@ -34,8 +34,12 @@ sig/
 *.nc
 *.org
 *.org~
+.#*
+#*
+#*#
 
 my*
+mon* 
 
 isd-history.csv
 
