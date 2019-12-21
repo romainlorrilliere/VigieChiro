@@ -7,12 +7,6 @@
 
 ## example:
 
-## d50 <- prepa_data(id="DataRP_SpTron_50",d="data/DataRP_SpTron_50.csv",aggregate_site=TRUE,add_abs=TRUE)
-## d90 <- prepa_data(id="DataRP_SpTron_90",d="data/DataRP_SpTron_90.csv",aggregate_site=TRUE,add_abs=TRUE)
-## main.glm()
-
-## -----------------------------------------------------------------------------------------------------------
-
 
 
 
@@ -373,7 +367,7 @@ add_abs <- function(d,col_gr=NULL,col_sp=NULL,col_value=NULL,col_info_gr=NULL,da
 ##'
 ##' @author Romain Lorrilliere
 prepa_data <- function(id="DataRP_SpTron_90",
-                       d="data/DataRP_SpTron_90.csv",dpart="data/p_export.csv",dsite ="data/sites_localites.txt",dSR="data/SRmed.csv",
+                       d="data/DataRP_SpTron_90.csv",dpart="data/p_export.csv",dsite ="data/sites_localites.txt",dSR="data/SRmed.csv",clim_data,
                        output=TRUE,
                        col_sample="participation",col_sp="espece",col_date="date_debut",col_site="site",col_IndiceDurPip="IndiceDurPip",col_IndiceProbPip="IndiceProbPip",col_SampleRate="SampleRate",col_tron="Tron",col_nbcontact="nb_contacts",col_temps="temps_enr",
                        seuilProbPip=c(.9,.85),seuilInfDurPipDirect=1.5,seuilSupDurPipExp=0.5,
@@ -531,7 +525,9 @@ prepa_data <- function(id="DataRP_SpTron_90",
         dsite <- dsite[,c("idsite","longitude","latitude")]
         dsite <- aggregate(.~idsite,data=dsite,mean)
         cat("  Ajout des variables Bioclim \n")
-        dbio <- extract_clim(dsite,c("longitude","latitude"),write=FALSE,plot=FALSE,merge_data=TRUE,sp_output = FALSE)
+
+                                        #  clim_data <- get_fr_worldclim_data()
+        dbio <- extract_clim(pts=dsite,longlat=c("longitude","latitude"),clim=clim_data,write=FALSE,plot=FALSE,merge_data=TRUE,sp_output = FALSE)
 
         dbio <- data.table(dbio)
         dbio <- dbio[,setdiff(colnames(dbio), c("longitude","latitude")),with=FALSE]
@@ -933,7 +929,7 @@ affectCatEBCC <- function(trend,pVal,ICinf,ICsup){
 ##' @author Romain Lorrilliere
 main.glm <- function(id=NULL,
                      donneesAll=list("data/data_vigieChiro_DataRP_SpTron_90_site_55sp_withAbs.csv","data/data_vigieChiro_DataRP_SpTron_50_site_55sp_withAbs.csv"),
-                     donneesName=c("90","50"),method="glmmTMB",
+                     donneesName=c("90","50"),method="glmmTMB",family="nbinom2",
                      only_direct="Auto",only_exp="Auto",seuilOccu=2,
                      col_sp="espece",
                      col_date_julien="julian",
@@ -1272,7 +1268,7 @@ main.glm <- function(id=NULL,
                         theYears <- sort(unique(as.character(d$year)))
                         cat("Years:",theYears,"\n --------------------------------------------\n\n")
 
-                        md_f <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family="nbinom2",asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
+                        md_f <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_VarAnFY",id,"_",sp),family=family,asfactor="year",data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
 
                         if(class(md_f)[1] != "try-error") {
                             ## test the robustness of the fit
@@ -1291,18 +1287,18 @@ main.glm <- function(id=NULL,
                         ## extraction du résultat du modéle
 
                       	theta_f <- sigma(md_f[[1]])
-                        coefan <- c(1,smd_f$coef[2:length(theYears)])
+                        coefan <- c(1,smd_f$coef)
                         erreuran <- smd_f[2:length(theYears),3]
 
-                        erreurannee_f<- c(0,erreuran *smd_f$coef[2:length(theYears)])
+                        erreurannee_f <- c(0,erreuran *smd_f$coef[2:length(theYears)])
                         pval <- c(1,smd_f[2:length(theYears),5])
-                        ic_inf_sim <-  c(1,smd_f$ICinf[2:length(theYears)])
-                        ic_sup_sim <-  c(1,smd_f$ICsup[2:length(theYears)])
+                        ic_inf_sim <-  c(1,smd_f$ICinf)
+                        ic_sup_sim <-  c(1,smd_f$ICsup)
 
 
                         tab_f_sp <- data.table(id = id,data=dn,espece = sp, nom_espece = nomSp,
                                           year = NA,year_var = 0,
-                                           val = coefannee,
+                                           val = coefan,
                                            LL = ic_inf_sim, UL = ic_sup_sim,
                                            catPoint = ifelse(pval < seuilSignif,"significatif",NA),pval,
                                            courbe = "abondance",courbe2 = vpan[1],
@@ -1467,20 +1463,20 @@ main.glm <- function(id=NULL,
 
                         myListEffect <- c("year","poly(julian,2)","sample_cat","nb_Tron_strict","temps_enr_strict","SpBioC1","SpBioC12","expansion_direct")
                      if(without_exp | without_direct) myListEffect <- setdiff(myListEffect,"expansion_direct")
-                        md_c <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family="nbinom2",asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
+                        md_c <- try(Sp_GLM_short(dataFile=id,varInterest="nb_contacts_strict",listEffects=myListEffect,interactions=NA,formulaRandom="+(1|site)",selSample=1e10,tagModel=paste0("GLMalphatest_tendancesFY",id,"_",sp),family=family,asfactor=NA,data=d,repout=repout,checkRepout=TRUE,saveFig=TRUE,output=TRUE,doBeep=doBeep,printFormula=TRUE),silent=TRUE)
                         if(class(md_c)[1] != "try-error") {
                             smd_c <- md_c[[2]]
 
                             vif_c_mean <- mean(smd_c$VIF)
                             vif_c_max <- max(smd_c$VIF)
                             theta_c <- sigma(md_c[[1]])
-                            smd_c <- smd_c[smd_c$term=="annee",]
+                            smd_c <- smd_c[smd_c$term=="year",]
                             coefan <- smd_c$coef
                             trend <- round(coefan,3)
                             ## pourcentage de variation sur la periode
                             estimate <- smd_c$Estimate
 
-                            pasdetemps <- length(unique(data_sp$annee))-1
+                            pasdetemps <- length(unique(d$year))-1
                             pourcentage <- round((exp(estimate*pasdetemps)-1)*100,3)
                             pval <- smd_c[,5]
                             erreuran <- smd_c[,3]
@@ -1491,13 +1487,14 @@ main.glm <- function(id=NULL,
                             ic_sup_sim <-  round(smd_c$ICsup,3)
 
                             ## tab_c_sp table utile pour la realisation des figures
+
                             tab_c_sp <- data.frame(Est=trend,
                                                 LL=ic_inf_sim, UL=ic_sup_sim,
                                                 pourcent=pourcentage,signif=pval<seuilSignif,pval,
                                                 vif=vif_c,vif_mean=vif_c_mean,vif_max=vif_c_max)
 
                             trendsignif <- tab_c_sp$signif
-                            pourcent <- round((exp(coefan*pasdetemps)-1)*100,3)
+                            pourcent <- pourcentage
                             ## surdispersion
 
                             ## affectation des tendence EBCC
@@ -1536,7 +1533,7 @@ main.glm <- function(id=NULL,
                                 nombre_annees = pasdetemps,premiere_annee = firstY,derniere_annee = lastY,direct=!without_direct,expansion=!without_exp,
                                 tendance = as.vector(tab_c_sp$Est) ,  IC_inferieur=ic_inf_sim , IC_superieur = ic_sup_sim ,
                                 pourcentage_variation=as.vector(pourcent),
-                                erreur_standard = as.vector(round(erreurannee2,4)), p_value = round(pval,3),
+                                erreur_standard = as.vector(round(erreurannee_c,4)), p_value = round(pval,3),
                                 vif = vif_c,vif_mean=vif_c_mean,vif_max=vif_c_max,
                                 significatif = trendsignif,categorie_tendance_EBCC=catEBCC,
                                 mediane_occurrence_direct=median(tabAn_f_sp$occ_direct,na.rm=TRUE) ,
@@ -1760,3 +1757,16 @@ main.glm <- function(id=NULL,
     }
 
 
+
+
+
+
+
+
+run.rmd <- function(file.rmd="trend_vigieChiro.rmd",rep.out="tuto",file.out="trend_vigieChiro",year = 2016, format_output="html"){
+   if(is.null(file.out)) file.out <- "trend_vigieChiro"
+    if(!is.null(rep.out)) file.out <- paste0(rep.out,"/",file.out)
+    format <- paste0(format_output,"_document")
+     rmarkdown::render(file.rmd,output_file=file.out,output_format = format)#,set_title=title))
+    cat("DONE !!!\n")
+}
